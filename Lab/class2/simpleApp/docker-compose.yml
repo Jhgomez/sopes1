@@ -1,0 +1,20 @@
+version: '3.7' # docker compose version
+
+services:
+  backend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: "backend-flask-alpine"
+    container_name: "backend"
+    restart: always
+    ports:
+      - "5000:5000"
+  frontend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: "frontend-node-alpine"
+    container_name: "frontend"
+    ports:
+      - "3000:3000"
