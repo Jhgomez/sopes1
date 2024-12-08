@@ -1,23 +1,59 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
 
 function App() {
+  const [users, setUsers] = useState([]);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    fetch('http://localhost:5000/users')
+    .then(response => response.json())
+    .then(data => setUsers(data));
+    }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    fetch('http://localhost:5000/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name, email })
+    })
+    .then(response => response.json())
+    .then(data => {
+      setUsers([...users, data]);
+      setName('');
+      setEmail('');
+    });
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <h1>Usuarios</h1>
+      <table border="1">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(user => (
+            <tr key={user.id}>
+              <td>{user.name}</td>
+              <td>{user.email}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2>Agregar usuario</h2>
+      <form onSubmit={handleSubmit}>
+        <input type="text" placeholder="Nombre" value={name} onChange={e => setName(e.target.value)} />
+        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+        <button type="submit">Agregar</button>
+      </form>
     </div>
   );
 }

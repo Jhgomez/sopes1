@@ -14,11 +14,11 @@ def get_users():
     return jsonify(users)
 
 @app.route('/users', methods=['POST'])
-def add_users():
+def add_user():
     data = request.get_json()
-    if 'name' and 'emai' in data:
+    if 'name' and 'email' in data:
         users.append(data)
-        return jsonify({'message': 'user added'}), 200
+        return jsonify({'message': 'user added'}), 201
     return jsonify({'message': 'user not added'}), 400
 
 if __name__ == '__main__':
