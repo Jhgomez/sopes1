@@ -135,4 +135,10 @@ Will use node, make sure version 23.3.0 is installed. Move to the frontend direc
 
 `npx create-react-app ~/Sopes1/Lab/class2/simpleApp/frontend`
 
+add UI
 
+#### run the app
+`npm run start`
+
+### Containarize application
+Create containers for backend and front end
