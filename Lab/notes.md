@@ -78,3 +78,52 @@ These are some Docker commands you might need
 ## Installing in Ubuntu
 
 Check [this article](https://medium.com/@aadefolaju/install-docker-engine-on-ubuntu-20-04-8c828120b9fc) or check the [official documentation](https://docs.docker.com/engine/install/ubuntu/)
+
+
+# Class 2
+
+## Docker Compose
+Lets us declare several containers that will be executed in a single host in one file to create and launch all of them, we can define shared volumes, save environment variables, and more. It is defined in a YAML file.
+
+### YAML basic structure
+Be aware identation is very important so be careful with spacing. You can use a YAML or identation corrector or verifier. Basically you the only thing you should avoid is tabs as differen operating systems treat this differently to a space, so just use spacing and be consistent, for example every indent level can be two spaces, keep that as a standard and it should work.
+
+```yaml
+title: YAML Ain't Markup Language
+name: Juan
+profession: Software Engineer
+learn:
+  - Basic Data Structure
+  - Commeting
+```
+
+### Commands
+```bash
+docker compose build
+docker compose up -d
+docker compose down
+```
+
+### Docker Volumes
+They live outside the container. They're created and live in the host inside the dockers directory
+
+## Example setup
+In our example we are using python to create a backend. I, instead of using an IDE which would automate the process of setting up an VENV, coded on the note pad so I had to create a VENV manually following [this guide](https://python.land/virtual-environments/virtualenv), 
+
+**IMPORTART: You have to deactivate the VENV after finishing the project as this overrides the system wide VENV**
+
+1. Create VENV: `python -m venv venv`
+2. Activate VENV, this is why we need to deactivate it later as it will modify the PATH variable putting this VENV at the top/front. I will create it the labs root folder:
+    * From command line: `venv\Scripts\activate.bat`
+    * From PowerShell: `venv\Scripts\Activate.psl`
+    * From GitBash: `source myvenv/scripts/activate` 
+3. Deactivate, just run: `deactivate`
+4. Delete Python VENV if needed(optional)
+
+### Install dependencies
+1. `pip install flask`
+2. `pip install flask-cors`
+
+### Run App
+1. From directory that contains app: `python app.py`
+
