@@ -108,6 +108,9 @@ docker compose down
 They live outside the container. They're created and live in the host inside the dockers directory
 
 ## Example setup
+
+### Backend
+
 In our example we are using python to create a backend. I, instead of using an IDE which would automate the process of setting up an VENV, coded on the note pad so I had to create a VENV manually following [this guide](https://python.land/virtual-environments/virtualenv), 
 
 **IMPORTART: You have to deactivate the VENV after finishing the project as this overrides the system wide VENV**
@@ -116,14 +119,20 @@ In our example we are using python to create a backend. I, instead of using an I
 2. Activate VENV, this is why we need to deactivate it later as it will modify the PATH variable putting this VENV at the top/front. I will create it the labs root folder:
     * From command line: `venv\Scripts\activate.bat`
     * From PowerShell: `venv\Scripts\Activate.psl`
-    * From GitBash: `source myvenv/scripts/activate` 
+    * From GitBash: `source venv/scripts/activate` 
 3. Deactivate, just run: `deactivate`
 4. Delete Python VENV if needed(optional)
 
-### Install dependencies
+#### Install dependencies
 1. `pip install flask`
 2. `pip install flask-cors`
 
-### Run App
+#### Run App
 1. From directory that contains app: `python app.py`
+
+### Frontend
+Will use node, make sure version 23.3.0 is installed. Move to the frontend directory and start the project with:
+
+`npx create-react-app ~/Sopes1/Lab/class2/simpleApp/frontend`
+
 
