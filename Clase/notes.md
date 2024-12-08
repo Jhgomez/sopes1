@@ -62,3 +62,17 @@ These are some Docker commands you might need
 * List information for a specific command with: `docker <COMMAND> --help`
 * List the containers on your machine, with: `docker container ls --all` or `docker ps -a` (without the -a show all flag, only running containers will be displayed)
 * List system-wide information regarding the Docker installation, including statistics and resources (CPU & memory) available to you in the WSL 2 context, with: `docker info`
+* Build image: `docker build -t <nombre_de_la_imagen>`
+* Build image: `docker build -f <dockerFileName> -t <nombre_de_la_imagen>`
+* Run image: `sudo docker run -d -p <host_port>>:<<container port>> <<image name>>`
+* Run image, limits memory to 100MB, --rm says to remove when containter stops, and "free -m" says to run Linux monitoring tool as well to check how much memory it is using: `docker run -m=100m --name olinux --rm oracleLinux:8 free -m`
+* Access the command line of a container that is already up: `docker exec -it <alias> /bin/sh`
+* Deletes all containers, images and volumes: `docker system prune -a`
+* Deletes specific container: `docker rm <<id container>>`
+* Deletes specific image: `docker rmi <<id image>>`
+* Forces removal of specific image:  `docker rmi -f <<id image>>` 
+
+
+## Installing in Ubuntu
+
+Check [this article](https://medium.com/@aadefolaju/install-docker-engine-on-ubuntu-20-04-8c828120b9fc) or check the [official documentation](https://docs.docker.com/engine/install/ubuntu/)
