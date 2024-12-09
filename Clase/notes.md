@@ -67,3 +67,4 @@ Open source is the easiest way to make a program to be free(libre) and put it un
 Creative commons is an organizations that helps you register your work and create a license of use, most likely it will be for public access
 
 LFX mentorship, Google summer and Outreachy are interships
+

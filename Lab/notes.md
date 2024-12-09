@@ -168,3 +168,75 @@ You can execute this command without building, it will build the containers if t
 
 ##### Stop containers
 `docker compose stop`
+
+# Class3
+
+## Kernel
+Gives support to computer hardware, it interacts between the memory and the applications, it assigns the resources to the applications. It manages processes, it is used for managing files because it helps process, store, retrieve files in storage devices. It manages communications, synchronization between/across processes by using techniques like traffic lights, queues and shared memory.
+
+Linux kernel is monolithic, mimix kernel is a micro kernel.
+
+## Process States and Concurrency
+
+### States
+
+* New
+* Ready
+* Running
+* Waiting/Blocked
+* Stop
+
+### Concurrency
+Is the capability to execute different processes at the same time to accomplish this the system uses threads
+
+#### Key Concepts
+* Multiprogramming, several process live in memory and OS manages CPU time between them
+* Multiproccessing, uses the cores available
+* Multitasking, user can run several processes in the computer
+* Multithreading, a single process can be executed in different threads
+
+### Deadlock
+Two threads in conflict waiting to use a thread
+
+## Process vs Program
+The program in this context is just a static file, it contains compiled code, it describes the set of instructions that represents it functionality or semantics this means it lives in 'secondary' memory while the process is being executed in 'primary' memory, we can think of it like a sandbox where the program is being executed, a process is dynamic because it has a lifecycle and different states.
+
+A program like a browser can have different processes running, each window in the browser would be a individual process
+
+## Process Signals
+Basic comman is Kill, we also can use CTRL + c (SIGINIT), CTRL + d (will display a #) or CTRL + z (SIGTSTP)
+
+### Kill Syntax
+kill [signal] PID
+
+* sighup(1) - hangs terminal or death of controller proces
+* sigtem(15) - kills the process letting it finish correctly
+* sigkill(9) - kills process without letting it finish
+* sigstop(19) - stops process
+* sigcont(18) - continues process if stopped
+* sigint(2) - keyboard interrupt
+* sigtstp(20) - keyboard stop
+* sigquit(3) - keyboar exit
+
+kill signal by default is 15, but processes can ignore this signal. kill signals 9 and stop 19 can not be ignored.
+
+In bash a SIGHUP to a shell is resent to all its children
+
+When closing a terminal or a session a SIGHUP is sent to all children
+
+Most daemons/services reacts to SIGHUP signals reading its configuration files again. If we want to restar t daemon we can do a kill -HUP
+
+* `pgrep` works similar to `ps | aux`
+* `pkill` send signals to processes by name
+
+## Proc Directory
+Contains a virtual file system, it is created in memory only its used to provide system's info
+
+## Kernel.h
+Is a C library used to get Kernel's info directly from modules in a programming language
+
+## Kernel's in Docker
+* Mount "/proc" folder
+* Give "sudo" privileges
+* Obtain host's PIDs
+
