@@ -1,0 +1,33 @@
+version: '3'
+services:
+  base:
+    image: "mysql"
+    container_name: "db_mysql"
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - base_mysql:/var/lib/mysql
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: "app_python"
+    container_name: "backend_flask"
+    environment:
+      DB_HOST: db_mysql
+      DB_USER: root
+      DB_PASS: secret
+      DB_NAME: Class3
+      DB_PORT: 3306
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: "app_react"
+    container_name: "frontend_react"
+    ports:
+      - "5173:5173"
+volumes:
+  base_mysql:

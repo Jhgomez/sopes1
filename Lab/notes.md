@@ -73,6 +73,8 @@ These are some Docker commands you might need
 * Deletes specific container: `docker rm <<id container>>`
 * Deletes specific image: `docker rmi <<id image>>`
 * Forces removal of specific image:  `docker rmi -f <<id image>>` 
+* List volumes: `docker volume ls`
+* Create a volume: `docker volume create <name>`
 
 
 ## Installing in Ubuntu
@@ -168,3 +170,126 @@ You can execute this command without building, it will build the containers if t
 
 ##### Stop containers
 `docker compose stop`
+
+# Class3
+
+## Kernel
+Gives support to computer hardware, it interacts between the memory and the applications, it assigns the resources to the applications. It manages processes, it is used for managing files because it helps process, store, retrieve files in storage devices. It manages communications, synchronization between/across processes by using techniques like traffic lights, queues and shared memory.
+
+Linux kernel is monolithic, mimix kernel is a micro kernel.
+
+## Process States and Concurrency
+
+### States
+
+* New
+* Ready
+* Running
+* Waiting/Blocked
+* Stop
+
+### Concurrency
+Is the capability to execute different processes at the same time to accomplish this the system uses threads
+
+#### Key Concepts
+* Multiprogramming, several process live in memory and OS manages CPU time between them
+* Multiproccessing, uses the cores available
+* Multitasking, user can run several processes in the computer
+* Multithreading, a single process can be executed in different threads
+
+### Deadlock
+Two threads in conflict waiting to use a thread
+
+## Process vs Program
+The program in this context is just a static file, it contains compiled code, it describes the set of instructions that represents it functionality or semantics this means it lives in 'secondary' memory while the process is being executed in 'primary' memory, we can think of it like a sandbox where the program is being executed, a process is dynamic because it has a lifecycle and different states.
+
+A program like a browser can have different processes running, each window in the browser would be a individual process
+
+## Process Signals
+Basic comman is Kill, we also can use CTRL + c (SIGINIT), CTRL + d (will display a #) or CTRL + z (SIGTSTP)
+
+### Kill Syntax
+kill [signal] PID
+
+* sighup(1) - hangs terminal or death of controller proces
+* sigtem(15) - kills the process letting it finish correctly
+* sigkill(9) - kills process without letting it finish
+* sigstop(19) - stops process
+* sigcont(18) - continues process if stopped
+* sigint(2) - keyboard interrupt
+* sigtstp(20) - keyboard stop
+* sigquit(3) - keyboar exit
+
+kill signal by default is 15, but processes can ignore this signal. kill signals 9 and stop 19 can not be ignored.
+
+In bash a SIGHUP to a shell is resent to all its children
+
+When closing a terminal or a session a SIGHUP is sent to all children
+
+Most daemons/services reacts to SIGHUP signals reading its configuration files again. If we want to restar t daemon we can do a kill -HUP
+
+* `pgrep` works similar to `ps | aux`
+* `pkill` send signals to processes by name
+
+## Proc Directory
+Contains a virtual file system, it is created in memory only its used to provide system's info
+
+## Kernel.h
+Is a C library used to get Kernel's info directly from modules in a programming language
+
+## Kernel's in Docker
+* Mount "/proc" folder
+* Give "sudo" privileges
+* Obtain host's PIDs
+
+We can see processes in Ubuntu with `ps aux`
+
+## Add Database to the Example
+
+### Create Backend
+
+1. Create the Server, install all python dependencies. The commands we might were given on class 2
+
+2. Do `pip freeze > requirements.txt` to make a list of packages installed in the venv
+
+### Create Frontend
+
+1. This time we will create front end with React Vite and JavaScript, run this command `npm create vite@latest`
+
+2. Install node packages with `npm i axios react-router-dom` and `npm i` 
+
+3. Install Axios : `npm i axios react-router-dom`
+
+3. (optional) run app to test is all ok `npm run dev`
+
+### Set up DB
+1. Create script
+
+### Containerize app
+1. Download an SQL image with `docker pull mysql`
+
+2. create docker compose script
+
+3. make sure frontend and backend has a docker file
+
+4. create a volume matching the name in the compose file `docker volume create <in our case name is: base_mysql>`
+
+5. create base container: `docker run --name <base image name in our case: db_mysql> -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=<password in our case: secret> mysql
+
+6. Build and then run or run and build compose from the directory it lives in. `docker compose build` and/or `docker compose up -d`
+
+### Stop containers(optional)
+`docker compose stop`
+
+### Test and Monitor the App
+1. We will need a db administrator tool for MySQL, there are several. "MySQL Workbench", "DBeaver", etc. I used DBeaver
+
+2. Open admin tool, select connect by "Host", enter the info from the compose file, Server host will be "localhost", database field will be blank, user name is DB_USER in compose file, password is DB_PASS in compose file
+
+3. Click "test connection", I got an error saying "Public Key Retrieval is not allowed". To fix it go to "Driver Properties" and make sure "useSSL" and "allowPublicKeyRetrieval" are set to true. If its successful click "finish"
+
+4. Now search in "Database Navigator" tab search db that was creted, right click it and click "connect"
+
+5. Now that we have connection, we need to create the a database. Right click "Databases" folder and click "Create new database", enter the name in the compose file that should match the actual db name in the db sql script, in our case "Class3", click "ok"
+
+6. Open SQL editor either by click the "SQL" button on the top bar or right clicking the db and "SQL Editor - Open SQL Editor". Now we will use the scripts to create the table, copy the table only. click the play button to execute query, now that the table is created copy the insert query, execute, now test it with a select query `SELECT * FROM disc`
