@@ -254,7 +254,7 @@ We can see processes in Ubuntu with `ps aux`
 
 ### Create Frontend
 
-1. This time we will create front end with react vite, run this command `npm create vite@latest`
+1. This time we will create front end with React Vite and JavaScript, run this command `npm create vite@latest`
 
 2. Install node packages with `npm i axios react-router-dom` and `npm i` 
 
