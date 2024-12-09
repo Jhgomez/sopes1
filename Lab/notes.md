@@ -272,7 +272,24 @@ We can see processes in Ubuntu with `ps aux`
 
 3. make sure frontend and backend has a docker file
 
-4. create a volume matching the name in the compose file `docker volume create <name>`
+4. create a volume matching the name in the compose file `docker volume create <in our case name is: base_mysql>`
 
-5. `docker run --name <base image name in our case: db_mysql> -d -p 3306:3306 -e 
+5. create base container: `docker run --name <base image name in our case: db_mysql> -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=<password in our case: secret> mysql
 
+6. Build and then run or run and build compose from the directory it lives in. `docker compose build` and/or `docker compose up -d`
+
+### Stop containers(optional)
+`docker compose stop`
+
+### Test and Monitor the App
+1. We will need a db administrator tool for MySQL, there are several. "MySQL Workbench", "DBeaver", etc. I used DBeaver
+
+2. Open admin tool, select connect by "Host", enter the info from the compose file, Server host will be "localhost", database field will be blank, user name is DB_USER in compose file, password is DB_PASS in compose file
+
+3. Click "test connection", I got an error saying "Public Key Retrieval is not allowed". To fix it go to "Driver Properties" and make sure "useSSL" and "allowPublicKeyRetrieval" are set to true. If its successful click "finish"
+
+4. Now search in "Database Navigator" tab search db that was creted, right click it and click "connect"
+
+5. Now that we have connection, we need to create the a database. Right click "Databases" folder and click "Create new database", enter the name in the compose file that should match the actual db name in the db sql script, in our case "Class3", click "ok"
+
+6. Open SQL editor either by click the "SQL" button on the top bar or right clicking the db and "SQL Editor - Open SQL Editor". Now we will use the scripts to create the table, copy the table only. click the play button to execute query, now that the table is created copy the insert query, execute, now test it with a select query `SELECT * FROM disc`
