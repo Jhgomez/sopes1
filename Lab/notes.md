@@ -73,6 +73,8 @@ These are some Docker commands you might need
 * Deletes specific container: `docker rm <<id container>>`
 * Deletes specific image: `docker rmi <<id image>>`
 * Forces removal of specific image:  `docker rmi -f <<id image>>` 
+* List volumes: `docker volume ls`
+* Create a volume: `docker volume create <name>`
 
 
 ## Installing in Ubuntu
@@ -239,4 +241,38 @@ Is a C library used to get Kernel's info directly from modules in a programming 
 * Mount "/proc" folder
 * Give "sudo" privileges
 * Obtain host's PIDs
+
+We can see processes in Ubuntu with `ps aux`
+
+## Add Database to the Example
+
+### Create Backend
+
+1. Create the Server, install all python dependencies. The commands we might were given on class 2
+
+2. Do `pip freeze > requirements.txt` to make a list of packages installed in the venv
+
+### Create Frontend
+
+1. This time we will create front end with react vite, run this command `npm create vite@latest`
+
+2. Install node packages with `npm i axios react-router-dom` and `npm i` 
+
+3. Install Axios : `npm i axios react-router-dom`
+
+3. (optional) run app to test is all ok `npm run dev`
+
+### Set up DB
+1. Create script
+
+### Containerize app
+1. Download an SQL image with `docker pull mysql`
+
+2. create docker compose script
+
+3. make sure frontend and backend has a docker file
+
+4. create a volume matching the name in the compose file `docker volume create <name>`
+
+5. `docker run --name <base image name in our case: db_mysql> -d -p 3306:3306 -e 
 

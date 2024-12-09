@@ -13,7 +13,7 @@ RUN apk add --no-cache gcc musl-dev libffi-dev && \
     pip install --no-cache-dir -r requirements.txt
 
 # Expose custom port
-EXPOSE 5000
+EXPOSE 8000
 
 # Execute application
 CMD ["python", "app.py"]
