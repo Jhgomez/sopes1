@@ -8,7 +8,7 @@ const instance = axios.create({
     }
 });
 
-export const registro = async (title,artis,yearR,genre) => {
-    const (data) = await instance.post('/registro', {title: title, artis: artist, yearR: parseInt(yearR), genre: genre});
+export const register = async (title,artis,yearR,genre) => {
+    const {data} = await instance.post('/registro', {title: title, artis: artist, yearR: parseInt(yearR), genre: genre});
     return data;
 }

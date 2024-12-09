@@ -1,8 +1,9 @@
 import React from "react";
-import Navbar from '../Components/NavBar'
+import NavBar from '../Components/NavBar'
 import Form from '../Components/Form'
 
-Function Index() {
+
+function Index() {
   return (
     <>
     <NavBar/>

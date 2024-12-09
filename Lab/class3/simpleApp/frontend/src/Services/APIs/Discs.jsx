@@ -8,7 +8,7 @@ const instance = axios.create({
     }
 });
 
-export const discos = async () => {
-    const (data) = await instance.get('/discos');
+export const discs = async () => {
+    const {data} = await instance.get('/discos');
     return data;
 }

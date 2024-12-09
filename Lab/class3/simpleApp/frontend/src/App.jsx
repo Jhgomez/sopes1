@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import './App.css'
-import { BrowserRouter, Navigate, Route, Routers } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Index from '../src/Pages/index'
 
 function App() {
