@@ -66,7 +66,7 @@ These are some Docker commands you might need
 * List system-wide information regarding the Docker installation, including statistics and resources (CPU & memory) available to you in the WSL 2 context, with: `docker info`
 * Build image: `docker build -t <nombre_de_la_imagen>`
 * Build image: `docker build -f <dockerFileName> -t <nombre_de_la_imagen>`
-* Run image: `sudo docker run -d -p <host_port>>:<<container port>> <<image name>>`
+* Run image and lets it running even if we close the terminal: `sudo docker run -d -p <host_port>>:<<container port>> <<image name>>`
 * Run image, limits memory to 100MB, --rm says to remove when containter stops, and "free -m" says to run Linux monitoring tool as well to check how much memory it is using: `docker run -m=100m --name olinux --rm oracleLinux:8 free -m`
 * Access the command line of a container that is already up: `docker exec -it <alias> /bin/sh`
 * Deletes all containers, images and volumes: `docker system prune -a`
@@ -141,4 +141,30 @@ add UI
 `npm run start`
 
 ### Containarize application
-Create containers for backend and front end
+Create containers for backend and frontend
+
+#### Write the dockerfiles
+
+#### Build the images/create containers
+If dockerfile is in the directory just put a "." in pack to dockerfile
+`docker build -t <image_tag_name> <path_to_dockerfile>`
+
+#### Run containers
+
+`docker run -p <local_host_port>:<container_port> <image_tag_name>`
+
+#### Use Docker Compose
+Centralize container configuration, creation and management, create a `docker-compose.yml`
+
+first delete all existing containers from previous step `docker system prune -a`
+
+##### Build the nodes in the script
+In the directory where the compose file lives run `docker compose build`
+
+##### Run the containers using compoe
+You can execute this command without building, it will build the containers if they don't exists
+
+`docker compose up -d`
+
+##### Stop containers
+`docker compose stop`

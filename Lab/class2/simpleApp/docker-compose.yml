@@ -3,7 +3,7 @@ version: '3.7' # docker compose version
 services:
   backend:
     build:
-      context: ./frontend
+      context: ./backend
       dockerfile: Dockerfile
     image: "backend-flask-alpine"
     container_name: "backend"
@@ -12,7 +12,7 @@ services:
       - "5000:5000"
   frontend:
     build:
-      context: ./backend
+      context: ./frontend
       dockerfile: Dockerfile
     image: "frontend-node-alpine"
     container_name: "frontend"
