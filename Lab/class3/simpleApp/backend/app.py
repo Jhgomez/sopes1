@@ -13,7 +13,7 @@ CORS(app)
 load_dotenv()
 
 # DB configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -22,12 +22,12 @@ db = SQLAlchemy(app)
 
 class Disco(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    artist = db.Column(db.String(100), nullable=False)
+    title = db.Column(db.String(100))
+    artist = db.Column(db.String(100))
     yearR = db.Column(db.Integer)
     genre = db.Column(db.String(100))
 
-    def ___str__(self, title, artist, yearR, genre):
+    def ___init__(self, title, artist, yearR, genre):
         self.title = title
         self.artist = artist
         self.yearR = yearR
@@ -53,21 +53,21 @@ def index():
 def get_discos():
     try:
         discos = Disco.query.all()
-        return jsonify([discos.to_dict() for disco in discos])
+        return jsonify([disco.to_dict() for disco in discos])
     except Exception as e:
-        jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/registro', methods=['POST'])
 def registro():
     data = request.get_json()
     try:
-        new_disco = Disco(title=data['title'], artis=data['artist'], yearR=data['yearR'], genre=data['genre'])
+        new_disco = Disco(title=data['title'], artist=data['artist'], yearR=data['yearR'], genre=data['genre'])
         db.session.add(new_disco)
         db.session.commit()
-        return jsonify({'message': 'Disco registered'}), 201
+        return jsonify({'message': 'Disco registered'})
     except Exception as e:
-        jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     with app.app_context():

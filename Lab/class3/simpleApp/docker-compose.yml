@@ -21,6 +21,9 @@ services:
       DB_PASS: secret
       DB_NAME: Class3
       DB_PORT: 3306
+    ports:
+      - "8000:8000"
+    restart: always
   frontend:
     build:
       context: ./frontend

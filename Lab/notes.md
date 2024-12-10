@@ -276,7 +276,7 @@ We can see processes in Ubuntu with `ps aux`
 
 5. create base container: `docker run --name <base image name in our case: db_mysql> -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=<password in our case: secret> mysql
 
-6. Build and then run or run and build compose from the directory it lives in. `docker compose build` and/or `docker compose up -d`
+6. Build and then run or run and build compose from the directory it lives in. `docker compose build` and/or `docker compose up -d` or `docker compose up --build`
 
 ### Stop containers(optional)
 `docker compose stop`
@@ -293,3 +293,10 @@ We can see processes in Ubuntu with `ps aux`
 5. Now that we have connection, we need to create the a database. Right click "Databases" folder and click "Create new database", enter the name in the compose file that should match the actual db name in the db sql script, in our case "Class3", click "ok"
 
 6. Open SQL editor either by click the "SQL" button on the top bar or right clicking the db and "SQL Editor - Open SQL Editor". Now we will use the scripts to create the table, copy the table only. click the play button to execute query, now that the table is created copy the insert query, execute, now test it with a select query `SELECT * FROM disc`
+
+7. If you need to run it use `docker compose 
+
+# Class 4
+
+## Virtualization
+Most of modern processors support virtualization. KVM and ESXI are type 1 hypervisors, while Virtual box and VMWare are type 2. Type one run next to the kernel and has access to resources directly while type 2 runs on top of a host OS meaning it has to interact with the host OS to get access to resources
