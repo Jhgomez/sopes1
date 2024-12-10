@@ -300,3 +300,20 @@ We can see processes in Ubuntu with `ps aux`
 
 ## Virtualization
 Most of modern processors support virtualization. KVM and ESXI are type 1 hypervisors, while Virtual box and VMWare are type 2. Type one run next to the kernel and has access to resources directly while type 2 runs on top of a host OS meaning it has to interact with the host OS to get access to resources
+
+## Example: Make a Module for RAM Memory and CPU To Track Usage
+Making kernel modules is a common task in backend development. We will use GCC and "make" which is GNU program used to generate executables, this is intended to be used over a Linux distro, in our case it was Ubuntu.
+
+WSL2 default kernel doesn't allow to load modules, and it doesn't have headers which is a module it doesn't have by default, and since we can't load modules if we compile the windows kernel and tell our distro to use it we will be able to load modules
+
+1. Follow [this instructions](https://learn.microsoft.com/en-us/community/content/wsl-user-msft-kernel-v6) to compile and set custom kernel, required for WSL2
+
+2. Create the code, it will be a C module, and the Makefile, Make is a build and automation tool basically. 
+
+3. I'm using Ubuntu in WSL2, so if needed do `sudo apt install make`. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "ram.ko" file
+
+4. Install/load the module with `insmod ram.ko`
+
+5. Check messages with command `dmseg` that way you'll see the log message we printed in our module
+
+6. Test the module do `cd /proc/` and then `ls` you should see "ram" now do a `cat ram` this will trigger all its functionallity
