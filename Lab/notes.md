@@ -308,12 +308,22 @@ WSL2 default kernel doesn't allow to load modules, and it doesn't have headers w
 
 1. Follow [this instructions](https://learn.microsoft.com/en-us/community/content/wsl-user-msft-kernel-v6) to compile and set custom kernel, required for WSL2
 
-2. Create the code, it will be a C module, and the Makefile, Make is a build and automation tool basically. 
+2. Create the code to build ram module, it will be a C module, and the Makefile, Make is a build and automation tool basically. 
 
-3. I'm using Ubuntu in WSL2, so if needed do `sudo apt install make`. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "ram.ko" file
+3. Build the module executable. I'm using Ubuntu in WSL2, so if needed do `sudo apt install make`. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "ram.ko" file
 
 4. Install/load the module with `insmod ram.ko`
 
 5. Check messages with command `dmseg` that way you'll see the log message we printed in our module
 
-6. Test the module do `cd /proc/` and then `ls` you should see "ram" now do a `cat ram` this will trigger all its functionallity
+6. Test the module do `cd /proc/` and then `ls` you should see "ram" now do a `cat ram` this will trigger all its functionality
+
+7. Create the code to build CPU module, it will be a C module, and the Makefile, Make is a build and automation tool basically. 
+
+8. Build the module executable. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "cpu.ko" file
+
+9. Install/load the module with `insmod cpu.ko`
+
+10. Check messages with command `dmseg` that way you'll see the log message we printed in our module
+
+11. Test the module do `cd /proc/` and then `ls` you should see "cpu" now do a `cat cpu` this will trigger all its functionality
