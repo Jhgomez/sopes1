@@ -15,7 +15,7 @@
 // To be able to use sysinfo structure
 #include <linux/sysinfo.h>
 
-MODULE_LICENSE("GPL);
+MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Module creation example in Linux");
 MODULE_AUTHOR("Juan Gomez");
 MODULE_VERSION("1.0");
@@ -31,10 +31,10 @@ Build a json with RAM memory information
 */
 
 static int write_file(struct seq_file * file, void *v) {
-    struct sysinfo info:
+    struct sysinfo info;
     // variables for storing memory info
     long total_ram, free_ram, used_ram, percentage_used;
-    si_meinfo(&info);
+    si_meminfo(&info);
     // Obtain memory info
     total_ram = (info.totalram * info.mem_unit) / (1024 * 1024);
     // Parse memory info to MB
@@ -48,7 +48,7 @@ static int write_file(struct seq_file * file, void *v) {
     seq_printf(file, "\"used_ram\": %id,\n", used_ram);
     seq_printf(file, "\"percentage_used\": %id,\n", percentage_used);
 
-    return 0
+    return 0;
 }
 
 // This function is executed when a CAT is made to the module
@@ -65,7 +65,7 @@ static struct proc_ops operations = {
 };
 
 static int _insert(void) {
-    proc_create("ram", 0, NULL &operations);
+    proc_create("ram", 0, NULL, &operations);
     printk(KERN_INFO "Creating file /proc/ram\n - Class 4\n");
     return 0;
 }

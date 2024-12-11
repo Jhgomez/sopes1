@@ -135,9 +135,43 @@ They don't contain the full OS, they just contain the apps and libs and they dep
 * `ssh developer@192.168.0.9`: I think this code lets us use ssh to connect to a remote computer
 * `nmap -sn 192.168.0.0-30`: network scanner used to discover hosts and services on a computer network by sending packets and analyzing responses.
 * nano <file_path>: opens editor, if path is not an editor will show a list of files
+* `sudo rm -R <file_path>: removes a file recursively, meaning it deletes everything inside the folder of the path
+* `<any_command> man`: this will give you all options possible to add to a command you in a similar way `help` or `-h` gives you info
+* `echo "hola" > hola.txt`: crea un archivo y le escribe el texto
+* `systemctl <action> <program>`: action can be "status", "start", "stop", "restart"
+* `/etc/init.d/<program> start`: old way to start a program
+* `ps -aux`: displays processes 
 
 #### MicroVm
 It has almost all OS inside it but it has an agent that makes it load lightly and fast without unnecessary tools/programs/libs, so it will execute like a Full VM and not a container. Its size is similar to a container but behaves like a full VM. VM processes are not visible from the host, so it can be used when we want to encapsulate those process and want to secure them that way. AWS lambda runs on a microVM. 
 
+# Class 5
+
+## GCP with Docker
+
+1. Create a Google Cloud account, we will be creating a VM
+
+2. First create a rule for the firewall, on top left open the service list and go to "VPC Network" go to "Firewall" and click "Create Firewall Rule", we will create two rules, "allin" and "allout". All in, enter name a tag name, in "Source IPV4 ranges" put "0.0.0.0/0", this means "any where" and in "Protocols and ports" select "Allow all" and then click "create". All out has same configurations as all in.
+
+3. Create a VM, select in the service list "Compute Engine" and "VM Instances", "Create Instance", in "Machine Configuration" window give it a name, select the image you want to use, you could use "N1". In "OS and storage" window click "change" and in "Operating system" select "Ubuntu 24.04 LTS". In "Networking" window apply rules we created using the tags you entered, for this example no other configurations are needed so just click "CREATE" at the bottom
+
+4. You'll see the VM in the "VM instances" window on the left rail. We need to log in to the instance. In the instance list your VM has an option under "Connect" column, it should be set to "SSH" select the arrow in that setting and go to "View google cloud command" and copy the command, open your computers terminal and paste the command, we will use SSH protocol to connect to our VM remotely. To be able to connect  more easily you should install "gcloud cli" on your computer, check the official documentation. The other alternative is from the window we copied the command, we can launch a cloud shell by clicking "RUN IN CLOUD SHELL" and drag the terminal from the bottom. Just paste the command in either interface, locally or in cloud shell. When installed locally you launch it by using `gcloud auth login`
+
+5. Now follow [this repo](https://github.com/sergioarmgpl/taller-docker) instructions, I'm in a WSL context and already have installed Docker desktop for windows, In the Lab notes in class 1 and class 2 you can find instructions on how to set it up. Do "Taller 1" first. You Could use "killerCoda" to get an Ubuntu machine to do this workshop instead of using wsl
 
 
+7. 
+
+https://learn.microsoft.com/en-us/community/content/wsl-user-msft-kernel-v6
+
+https://www.maketecheasier.com/build-custom-kernel-ubuntu/
+`make olddefconfig`
+
+https://askubuntu.com/questions/450269/make-dh-command-not-found
+
+https://www.maketecheasier.com/build-custom-kernel-ubuntu/
+
+https://github.com/microsoft/WSL2-Linux-Kernel/blob/linux-msft-wsl-6.6.y/arch/x86/configs/config-wsl
+
+
+`sudo apt install linux-headers-generic`
