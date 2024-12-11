@@ -310,11 +310,15 @@ WSL2 default kernel doesn't allow to load modules, and it doesn't have headers w
 
 2. Create the code to build ram module, it will be a C module, and the Makefile, Make is a build and automation tool basically. 
 
+3. To be able to compile it into a module you need GCC and since I'm using Ubuntu-24.04 WSL2 and the default kernel Windows includes does not support loading modules so we need to build our own module, in order to do that we need to compile an Ubuntu Linux kernel. I had to combine different pages instructions, first I start installing dependencies indicated in [windows documentation](https://learn.microsoft.com/en-us/community/content/wsl-user-msft-kernel-v6), be aware that I won't be using Windows kernel indicated in their instructions I will use Ubuntu's Noble official kernel source code to compile it, it seems like Windows kernel still won't let you install modules which is what we want to achieve, so just run `sudo apt update && sudo apt install build-essential flex bison libssl-dev libelf-dev bc python3 pahole cpio` in a WSL terminal. Now download the source code following [official documentation instructions](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel) first I install the dependencies indicated here also `sudo apt install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm`, [download the repo](https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide#Kernel.2FAction.2FGitTheSource.Obtaining_the_kernel_sources_for_an_Ubuntu_release_using_git), it is better to store within Ubuntu WSL, I did it in `cd /home/<username>` `git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/noble`, install headers `sudo apt install linux-headers-generic`. Now back to Windows documentation, cd to kernel file `cd WSL2-Linux-Kernel`. From [this documentation](https://www.maketecheasier.com/build-custom-kernel-ubuntu/) I learnt that we need a .config file which we can see in Windows documentation in step 5, but we need to do some 'debugging' and find the actual Windows configurations since we didn't download their kernel, so create a .config file `touch .config` with either nano, cat or any other text editor copy the [Windows configurations](https://github.com/microsoft/WSL2-Linux-Kernel/blob/linux-msft-wsl-6.6.y/arch/x86/configs/config-wsl) I did `nano ./config` and Ctrl+C, Ctrl+V. Now build it `make -j$(nproc)` if that doesn't work do `make all` or if not `make -j$(nproc) .config`, when asked to enter `[y/n?]` or `[n/m]` just press enter, this will do default choice. Once it is done go back to windows documentation and do steps 6, 7(open WSL from a terminal running as admin), and follow instructions to Install kernel in same documentation, this means the rest of commands are `sudo make modules_install headers_install`, `cp arch/x86/boot/bzImage /mnt/c/`, create ".wslconfig" file and copy the text instructed there.
+
+4. install headers `sudo apt install linux-headers-generic`
+
 3. Build the module executable. I'm using Ubuntu in WSL2, so if needed do `sudo apt install make`. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "ram.ko" file
 
-4. Install/load the module with `insmod ram.ko`
+4. Install/load the module with `sudo insmod ram.ko`
 
-5. Check messages with command `dmseg` that way you'll see the log message we printed in our module
+5. Check messages with command `dmesg` that way you'll see the log message we printed in our module
 
 6. Test the module do `cd /proc/` and then `ls` you should see "ram" now do a `cat ram` this will trigger all its functionality
 
@@ -322,8 +326,8 @@ WSL2 default kernel doesn't allow to load modules, and it doesn't have headers w
 
 8. Build the module executable. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "cpu.ko" file
 
-9. Install/load the module with `insmod cpu.ko`
+9. Install/load the module with `sudo insmod cpu.ko`
 
-10. Check messages with command `dmseg` that way you'll see the log message we printed in our module
+10. Check messages with command `dmesg` that way you'll see the log message we printed in our module
 
 11. Test the module do `cd /proc/` and then `ls` you should see "cpu" now do a `cat cpu` this will trigger all its functionality
