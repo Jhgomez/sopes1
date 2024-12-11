@@ -140,7 +140,8 @@ They don't contain the full OS, they just contain the apps and libs and they dep
 * `echo "hola" > hola.txt`: crea un archivo y le escribe el texto
 * `systemctl <action> <program>`: action can be "status", "start", "stop", "restart"
 * `/etc/init.d/<program> start`: old way to start a program
-* `ps -aux`: displays processes 
+* `ps -aux`: displays processes * 
+* `vi <file_name>`: creates a file and opens it in visual editor but nano may be better for new users
 
 #### MicroVm
 It has almost all OS inside it but it has an agent that makes it load lightly and fast without unnecessary tools/programs/libs, so it will execute like a Full VM and not a container. Its size is similar to a container but behaves like a full VM. VM processes are not visible from the host, so it can be used when we want to encapsulate those process and want to secure them that way. AWS lambda runs on a microVM. 
@@ -159,19 +160,30 @@ It has almost all OS inside it but it has an agent that makes it load lightly an
 
 5. Now follow [this repo](https://github.com/sergioarmgpl/taller-docker) instructions, I'm in a WSL context and already have installed Docker desktop for windows, In the Lab notes in class 1 and class 2 you can find instructions on how to set it up. Do "Taller 1" first. You Could use "killerCoda" to get an Ubuntu machine to do this workshop instead of using wsl
 
+6. If build container fails try searching in the docker config do `nano $HOME/.docker/config.json
 
-7. 
+7. We can upload our image to dockerhub, for that you need a dockerhub account and do a `docker login -u <ducker__hub_user_name>` and then `docker push <container_name>`
 
-https://learn.microsoft.com/en-us/community/content/wsl-user-msft-kernel-v6
+## Notes
 
-https://www.maketecheasier.com/build-custom-kernel-ubuntu/
-`make olddefconfig`
+* Whenever we  need Docker to run a program for example nginx and we don't know the command we can search on google something like this "nginx command to run container"
 
-https://askubuntu.com/questions/450269/make-dh-command-not-found
+## Cloud Computing
+Computing services and resources that are accessible through the web, configured programmatically and accessed through a paid or free payment model or paid by a infrastructure provider
 
-https://www.maketecheasier.com/build-custom-kernel-ubuntu/
+### Could Computing Services
+#### Types
+* SaaS: End user app like: Wordpress, .js applications, .jar, etc
+* PaaS: Applications servers or runtimes like: NodeJs, Apache, Glassfish, Net Core
+* IaaS: Is basically an operating system running on top of hardware(Bare metal), so it basically is created from these two components, hardware and an OS. Examples: GNU/Linux, Ubuntu, Fedora,
 
-https://github.com/microsoft/WSL2-Linux-Kernel/blob/linux-msft-wsl-6.6.y/arch/x86/configs/config-wsl
+#### Cloud Types by Access To Its Resources
+* Public: anyone can access through internet
+* Private: Accessed locally where cloud 
+* Hybrid: Public and private
+* Community: Shared resources between clouds to accomplish a goal, like investigating a subject.
 
+An example of different clouds is: In a university students data lives in a private cloud, it can only be accessed from within but the students can log to a users so it means they talk to a public server in a public cloud, this creates a hybrid cloud and lets say the university is working with another university  that could use same resources, meaning their service would be using the first university resources, and that would be a community could.
 
-`sudo apt install linux-headers-generic`
+#### Software
+Software like OpenStack, VMWare ESXI and Open Nebula and many more are used for creating clouds.
