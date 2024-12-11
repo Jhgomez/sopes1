@@ -68,3 +68,76 @@ Creative commons is an organizations that helps you register your work and creat
 
 LFX mentorship, Google summer and Outreachy are interships
 
+# Class 4
+
+## Minix
+Is the first UNIX like SO, created by Andrew Tanenbaum, it is very old SO
+
+### Multics
+Is another old OS, the first high level language and the first DB, it handled persmissions based on MIOS, was made in this OS. 
+
+### Operating Systems - Design and Implementation
+Is a book that was written based on the experience of building Mimix
+
+### More on Minix
+Linux was developed based on Minix. Minix is a microkernel while Linux is a monolithic kernel
+
+### Quick notes
+* Linux is written in GCC
+* Minix is written in ANSI Standard C
+* Minix switch easily to Clang/LLVM
+* Linux is still stuck with GCC
+* Minix eventually became BSD, at the beginning it was proprietary software but ti was given to Beerkley's university so it became open source and free software
+* Posix
+
+## Kernel Types
+Linux contains a Kernel which is a program/software that contains a set of instructions that lets us use hardware on the computer. the other part of an OS are the set of programs that let us interact with the hardware. There is 4 kernel types:
+
+### Monolithic
+Linux kernel is Monolithic, it means the Kernel live in one binary only, if we are adding more functionalities by adding new programs or modifying existing programs the whole kernel needs to be recompiled. If one component fails all the kernel fails. At the beginning Ubuntu was a monolithic kernel
+
+### Modular
+It lets the kernel execute compiled kernel objects dynamically without having to recompile the whole kernel. Ubuntu has a modular Kernel
+
+### Microkernel
+A kernel with basic functionalities, is capable to continue working even if a kernel module fails, modules are separated from the kernel but can not be loaded dynamically. Windows has a microkernel
+
+### Hybrid
+Has monolithic and microkernel practices. Windows server uses this approach, windows server is very stable
+
+### Exokernel
+Is similar to adding a layer to the OS so it can do some specific task. Maybe similar to openstack to do cloud, proxmox. Its an OS architecture that gives applications direct access to hardware resources, a VMware virtual machine could be seen as an Exokernel
+
+### Unikernel
+Is like a module that lives in a kernel and lets you add functionalities, containers use them
+
+### Nanokernel
+They are used in containers 	
+
+## Computer Boot Proccess
+
+1. When it can't find anything in the memory the computer so it looks for another program called BIOS which is now 'replaced' with UEFI, which is basically firmware installed in the motherboard that CPU runs to start the booting sequence, you could acutally tell this program where you want to load the OS, it could be an USB, a CD, from network etc. By default Hard disk is where it loads the MBR from, is always at the beginning sector of the bootable device, after this some info that declares the OSs that live in the device, they are known as partitions. Then It will load the file system and then starts the bootloader and then it loads the kernel and the kernel loads all software that manages hardware, it means it starts some daemons/services, drivers, etc, so it ends up configuring the system across different levels of execution, and it then shows the command line or login screen, remember Linux can be loaded in memory from a USB as mentioned, also know that each partition will have its own kernel. There exists errors like kernel panic and segment violation which could also throw a kernel panic if it access some space in kernel that doesn't exists
+
+## **Virtualization**
+Is a hardware and software partitioning technique to create multiple execution environments. We can virtualize machines/hosts, applications, servers, networks, storage, vlans, etc. Statistically servers spend 80% of the time idle and 20% of time processing computations, that is why creating several execution environments in a computer is very important/convenient to reduce costs. The best scalability approach is combining both vertical and horizontal scalability. There is types of virtualization. OS virtualization like containers, hybrid and native virtualization.
+
+### Hypervisor
+Is the software or component in charge of creating virtual machines, its also known as Virtual Machine Monitor(VMM). There are some processors that support virtualization, so they will obviously perform better. There are different types of hypervisors, rings from 0 to 2 like VMware, ESXI, KVM, HyperV. Tip
+
+### MicroVMs vs Containers vs Full VM
+#### Full VM
+They usually are more than 1GB. They contain the full OS so it contains the apps, system libraries, and kernel on top of another system which means a kernel on top of a kernel. We can not see processes in the VM from a monitor from the host
+
+#### Containers
+They don't contain the full OS, they just contain the apps and libs and they depend on the kernel of the host OS, this means for example if we are installing a Linux container we need to install it in Linux OS, it uses CGROUPS to be able to do segmentations of memory, they are literally like folders with binaries inside and CGROUPS assigns them memory and IP address, kernel has to have some flags activated or setup to be able to use CGROUPS. You can activate these flags in Linux search for the "firmware" folder inside it it should have the "cmdline.txt" file and edit it with something like nano, `cgroup_enable=cpuset cgroup_memory=1 cgropu_enable=memory`. We can see container processes from host, they are faster, smaller but is dangerous to kill a process from the host
+
+##### commands
+* `ssh developer@192.168.0.9`: I think this code lets us use ssh to connect to a remote computer
+* `nmap -sn 192.168.0.0-30`: network scanner used to discover hosts and services on a computer network by sending packets and analyzing responses.
+* nano <file_path>: opens editor, if path is not an editor will show a list of files
+
+#### MicroVm
+It has almost all OS inside it but it has an agent that makes it load lightly and fast without unnecessary tools/programs/libs, so it will execute like a Full VM and not a container. Its size is similar to a container but behaves like a full VM. VM processes are not visible from the host, so it can be used when we want to encapsulate those process and want to secure them that way. AWS lambda runs on a microVM. 
+
+
+

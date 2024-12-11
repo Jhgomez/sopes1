@@ -276,7 +276,7 @@ We can see processes in Ubuntu with `ps aux`
 
 5. create base container: `docker run --name <base image name in our case: db_mysql> -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=<password in our case: secret> mysql
 
-6. Build and then run or run and build compose from the directory it lives in. `docker compose build` and/or `docker compose up -d`
+6. Build and then run or run and build compose from the directory it lives in. `docker compose build` and/or `docker compose up -d` or `docker compose up --build`
 
 ### Stop containers(optional)
 `docker compose stop`
@@ -293,3 +293,41 @@ We can see processes in Ubuntu with `ps aux`
 5. Now that we have connection, we need to create the a database. Right click "Databases" folder and click "Create new database", enter the name in the compose file that should match the actual db name in the db sql script, in our case "Class3", click "ok"
 
 6. Open SQL editor either by click the "SQL" button on the top bar or right clicking the db and "SQL Editor - Open SQL Editor". Now we will use the scripts to create the table, copy the table only. click the play button to execute query, now that the table is created copy the insert query, execute, now test it with a select query `SELECT * FROM disc`
+
+7. If you need to run it use `docker compose 
+
+# Class 4
+
+## Virtualization
+Most of modern processors support virtualization. KVM and ESXI are type 1 hypervisors, while Virtual box and VMWare are type 2. Type one run next to the kernel and has access to resources directly while type 2 runs on top of a host OS meaning it has to interact with the host OS to get access to resources
+
+## Example: Make a Module for RAM Memory and CPU To Track Usage
+Making kernel modules is a common task in backend development. We will use GCC and "make" which is GNU program used to generate executables, this is intended to be used over a Linux distro, in our case it was Ubuntu.
+
+WSL2 default kernel doesn't allow to load modules, and it doesn't have headers which is a module it doesn't have by default, and since we can't load modules if we compile the windows kernel and tell our distro to use it we will be able to load modules
+
+1. Follow [this instructions](https://learn.microsoft.com/en-us/community/content/wsl-user-msft-kernel-v6) to compile and set custom kernel, required for WSL2
+
+2. Create the code to build ram module, it will be a C module, and the Makefile, Make is a build and automation tool basically. 
+
+3. To be able to compile it into a module you need GCC and since I'm using Ubuntu-24.04 WSL2 and the default kernel Windows includes does not support loading modules so we need to build our own module, in order to do that we need to compile an Ubuntu Linux kernel. I had to combine different pages instructions, first I start installing dependencies indicated in [windows documentation](https://learn.microsoft.com/en-us/community/content/wsl-user-msft-kernel-v6), be aware that I won't be using Windows kernel indicated in their instructions I will use Ubuntu's Noble official kernel source code to compile it, it seems like Windows kernel still won't let you install modules which is what we want to achieve, so just run `sudo apt update && sudo apt install build-essential flex bison libssl-dev libelf-dev bc python3 pahole cpio` in a WSL terminal. Now download the source code following [official documentation instructions](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel) first I install the dependencies indicated here also `sudo apt install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm`, [download the repo](https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide#Kernel.2FAction.2FGitTheSource.Obtaining_the_kernel_sources_for_an_Ubuntu_release_using_git), it is better to store within Ubuntu WSL, I did it in `cd /home/<username>` `git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/noble`, install headers `sudo apt install linux-headers-generic`. Now back to Windows documentation, cd to kernel file `cd WSL2-Linux-Kernel`. From [this documentation](https://www.maketecheasier.com/build-custom-kernel-ubuntu/) I learnt that we need a .config file which we can see in Windows documentation in step 5, but we need to do some 'debugging' and find the actual Windows configurations since we didn't download their kernel, so create a .config file `touch .config` with either nano, cat or any other text editor copy the [Windows configurations](https://github.com/microsoft/WSL2-Linux-Kernel/blob/linux-msft-wsl-6.6.y/arch/x86/configs/config-wsl) I did `nano ./config` and Ctrl+C, Ctrl+V. Now build it `make -j$(nproc)` if that doesn't work do `make all` or if not `make -j$(nproc) .config`, when asked to enter `[y/n?]` or `[n/m]` just press enter, this will do default choice. Once it is done go back to windows documentation and do steps 6, 7(open WSL from a terminal running as admin), and follow instructions to Install kernel in same documentation, this means the rest of commands are `sudo make modules_install headers_install`, `cp arch/x86/boot/bzImage /mnt/c/`, create ".wslconfig" file and copy the text instructed there.
+
+4. install headers `sudo apt install linux-headers-generic`
+
+3. Build the module executable. I'm using Ubuntu in WSL2, so if needed do `sudo apt install make`. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "ram.ko" file
+
+4. Install/load the module with `sudo insmod ram.ko`
+
+5. Check messages with command `dmesg` that way you'll see the log message we printed in our module
+
+6. Test the module do `cd /proc/` and then `ls` you should see "ram" now do a `cat ram` this will trigger all its functionality
+
+7. Create the code to build CPU module, it will be a C module, and the Makefile, Make is a build and automation tool basically. 
+
+8. Build the module executable. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "cpu.ko" file
+
+9. Install/load the module with `sudo insmod cpu.ko`
+
+10. Check messages with command `dmesg` that way you'll see the log message we printed in our module
+
+11. Test the module do `cd /proc/` and then `ls` you should see "cpu" now do a `cat cpu` this will trigger all its functionality
