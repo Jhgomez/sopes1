@@ -135,9 +135,55 @@ They don't contain the full OS, they just contain the apps and libs and they dep
 * `ssh developer@192.168.0.9`: I think this code lets us use ssh to connect to a remote computer
 * `nmap -sn 192.168.0.0-30`: network scanner used to discover hosts and services on a computer network by sending packets and analyzing responses.
 * nano <file_path>: opens editor, if path is not an editor will show a list of files
+* `sudo rm -R <file_path>: removes a file recursively, meaning it deletes everything inside the folder of the path
+* `<any_command> man`: this will give you all options possible to add to a command you in a similar way `help` or `-h` gives you info
+* `echo "hola" > hola.txt`: crea un archivo y le escribe el texto
+* `systemctl <action> <program>`: action can be "status", "start", "stop", "restart"
+* `/etc/init.d/<program> start`: old way to start a program
+* `ps -aux`: displays processes * 
+* `vi <file_name>`: creates a file and opens it in visual editor but nano may be better for new users
 
 #### MicroVm
 It has almost all OS inside it but it has an agent that makes it load lightly and fast without unnecessary tools/programs/libs, so it will execute like a Full VM and not a container. Its size is similar to a container but behaves like a full VM. VM processes are not visible from the host, so it can be used when we want to encapsulate those process and want to secure them that way. AWS lambda runs on a microVM. 
 
+# Class 5
 
+## GCP with Docker
 
+1. Create a Google Cloud account, we will be creating a VM
+
+2. First create a rule for the firewall, on top left open the service list and go to "VPC Network" go to "Firewall" and click "Create Firewall Rule", we will create two rules, "allin" and "allout". All in, enter name a tag name, in "Source IPV4 ranges" put "0.0.0.0/0", this means "any where" and in "Protocols and ports" select "Allow all" and then click "create". All out has same configurations as all in.
+
+3. Create a VM, select in the service list "Compute Engine" and "VM Instances", "Create Instance", in "Machine Configuration" window give it a name, select the image you want to use, you could use "N1". In "OS and storage" window click "change" and in "Operating system" select "Ubuntu 24.04 LTS". In "Networking" window apply rules we created using the tags you entered, for this example no other configurations are needed so just click "CREATE" at the bottom
+
+4. You'll see the VM in the "VM instances" window on the left rail. We need to log in to the instance. In the instance list your VM has an option under "Connect" column, it should be set to "SSH" select the arrow in that setting and go to "View google cloud command" and copy the command, open your computers terminal and paste the command, we will use SSH protocol to connect to our VM remotely. To be able to connect  more easily you should install "gcloud cli" on your computer, check the official documentation. The other alternative is from the window we copied the command, we can launch a cloud shell by clicking "RUN IN CLOUD SHELL" and drag the terminal from the bottom. Just paste the command in either interface, locally or in cloud shell. When installed locally you launch it by using `gcloud auth login`
+
+5. Now follow [this repo](https://github.com/sergioarmgpl/taller-docker) instructions, I'm in a WSL context and already have installed Docker desktop for windows, In the Lab notes in class 1 and class 2 you can find instructions on how to set it up. Do "Taller 1" first. You Could use "killerCoda" to get an Ubuntu machine to do this workshop instead of using wsl
+
+6. If build container fails try searching in the docker config do `nano $HOME/.docker/config.json
+
+7. We can upload our image to dockerhub, for that you need a dockerhub account and do a `docker login -u <ducker__hub_user_name>` and then `docker push <container_name>`
+
+## Notes
+
+* Whenever we  need Docker to run a program for example nginx and we don't know the command we can search on google something like this "nginx command to run container"
+
+## Cloud Computing
+Computing services and resources that are accessible through the web, configured programmatically and accessed through a paid or free payment model or paid by a infrastructure provider
+
+### Could Computing Services
+#### Types
+* SaaS: End user app like: Wordpress, .js applications, .jar, etc
+* PaaS: Applications servers or runtimes like: NodeJs, Apache, Glassfish, Net Core
+* IaaS: Is basically an operating system running on top of hardware(Bare metal), so it basically is created from these two components, hardware and an OS. Examples: GNU/Linux, Ubuntu, Fedora,
+
+#### Cloud Types by Access To Its Resources
+* Public: anyone can access through internet
+* Private: Accessed locally where cloud 
+* Hybrid: Public and private
+* Community: Shared resources between clouds to accomplish a goal, like investigating a subject.
+
+An example of different clouds is: In a university students data lives in a private cloud, it can only be accessed from within but the students can log to a users so it means they talk to a public server in a public cloud, this creates a hybrid cloud and lets say the university is working with another university  that could use same resources, meaning their service would be using the first university resources, and that would be a community could.
+
+#### Software
+Software like OpenStack, VMWare ESXI and Open Nebula and many more are used for creating clouds.

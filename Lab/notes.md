@@ -331,3 +331,49 @@ WSL2 default kernel doesn't allow to load modules, and it doesn't have headers w
 10. Check messages with command `dmesg` that way you'll see the log message we printed in our module
 
 11. Test the module do `cd /proc/` and then `ls` you should see "cpu" now do a `cat cpu` this will trigger all its functionality
+
+# Class 5
+
+## Random note
+To run execute a command from terminal in Java you first have to check system name
+```Java
+String name = System.getProperty("os.name");
+```
+
+Then check the string with your own logic to handle different OS but in Windows this is the code to print a list of all files/directories in the current directoy
+
+```Java
+ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", "dir");
+Process p = processBuilder.start();
+
+// Read the output from ML modeling
+BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+String outputLine;
+
+while ((outputLine = in.readLine()) != null) {
+	System.out.println(outputLine);        
+}
+```
+
+In unix like OS, like MacOs or Linux, the process builder would look like this
+
+```Java
+ProcessBuilder processBuilder = new ProcessBuilder("/bin/sh", "-c", "ls");
+
+or
+
+ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", "ls");
+
+```
+
+## Building a Rest Api in Golang
+Some important libraries we will use are "gorilla/mux", you can get a first insight with [this info](https://medium.com/@fasgolangdev/creating-rest-apis-in-golang-a-guide-with-framework-examples-49601fdb09e0), navigating through [their repo](https://github.com/gorilla) I can see in the mux library they talk about handlers  "gorilla/handlers" they are know as middle ware, you might want to use them although is not necessary. We will use [this Go Http client](https://pkg.go.dev/net/http) called "net/http"
+
+After definning your dependencies in your file execute on command line from the file you have your source code `go mod tidy` this will generate a `go.mod` file which is where the actual dependencies are declared, this command will add any missing dependency in the .mod file. You might also need to do a `go get` see packages missing and then `go get <git_hub>` if packages are not working, also make sure libraries in git hub that contain dependencies are declare on top fo file.
+
+### Note
+#### Same-origin Policy(SOP)
+Rule enforced by browsers to control access to data between web applications, is implemented by default in browsers, one website can not intercat or make requests to other applications. Websites could do requests to other websites and get sensitive info without this. It only prevents reading not writting between web apps, memaning we could make request to write but when that happens if the origin(protocol/scheme + hostname/domain + port = url) is different
+
+#### Cross-origin Resource Sharing(CORS)
+Allows resources on a server to be requested from another domain, this might be wanted when for example your web server host two applications meaning you can reach two different applications in the same ip address using a domain name indicator(DNI), this means two applications/websites from the same entity with a sligthtly different domain name might need to enable cross-origin communication. We can configure policies to allow cross-origin communication from another domain. This is accomplish by using HTTP headers to define origin that the browser can permit requests from. The two headers we use here are: `Access-Control-Allow-Origin: <*/origin_domain/ null>` and `Access-Controll_Allow-Credentials: true(no other value)`, the later allows response headers to include cookies, certificates, authorizations, etc.
