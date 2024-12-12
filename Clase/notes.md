@@ -148,6 +148,7 @@ They don't contain the full OS, they just contain the apps and libs and they dep
 * `/etc/init.d/<program> start`: old way to start a program
 * `ps -aux`: displays processes * 
 * `vi <file_name>`: creates a file and opens it in visual editor but nano may be better for new users
+* `wget <url>`: lets download files from internet
 
 #### MicroVm
 It has almost all OS inside it but it has an agent that makes it load lightly and fast without unnecessary tools/programs/libs, so it will execute like a Full VM and not a container. Its size is similar to a container but behaves like a full VM. VM processes are not visible from the host, so it can be used when we want to encapsulate those process and want to secure them that way. AWS lambda runs on a microVM. 
@@ -193,3 +194,76 @@ An example of different clouds is: In a university students data lives in a priv
 
 #### Software
 Software like OpenStack, VMWare ESXI and Open Nebula and many more are used for creating clouds.
+
+# Class 6
+
+## Containers Advantages
+
+* No need of special hardware
+* Apps are executed with same speed as physical machine
+* Ver portable, fast to move
+* Developers and Operators are closer
+* Easier scalability 
+
+## Docker Architecture
+It has a lot of components but two important to talk about
+
+* RunC: in charge of creating containers. In charge of manage and execute at a lower level it uses "libcontainer" library
+* ContainerD: uses RunC but they are at the same layer. Is a daemon which manages containers lifecycle. Kubernetes only uses ContainerD when managing Docker containers
+
+### OCI: Image Storing Standard
+It is now being used to store all types of info not containers only, OCI type artifacts 
+
+## Cloud Native
+Examples of cloud native implementations are:  containers, services networks(mallas de servicios), microservices, inmutable infrastruture, declarative APIs
+
+Devpos, containers, microservices, versioning. Web factor apps is key concepts that explains the purpose of cloud computing. Cloud native works with concepts of CI/CD, DevOps, microservices, containers.
+
+So cloud computing is the action of leveraging of building software apps using containers, service networks, microservices and  immutable infrastructure APIs
+
+### Monolitic Architecture
+Basically MVC
+
+## CNCF
+they have different levels of opensource proyects, they are separated in four levels, sandbox, incubated, graduated and archived. sandox is less mature and archived is the most mature. They are accepted and supervised byt TOC which is a committee. TAG are groups that investigate and they are supperted by working groups
+
+To join CNCF go to their slack channel, join "cloud native community group", create events, assist to events and contribute
+
+## Keppler
+Is a software that lets track energetic Kubernetes comsumption. Other tools that helps track and leverage resources efficiently is registry softwares like Harbor. Most used container registries  are administrated by the cloud providers or docker
+
+## Container Registry
+Is basically a private repo or central hub where the building blocks of the containerized applications live. It enables to share and access containers images effortlessly. Docker hub is a public container registry. They are used to store proprietary or sensitive container images. Amazon Elastic Container Registry, Google Container Registry, Azure Container Registry are private registries
+
+### Harbor Example
+1. Create a VM in GCP, in this example we used a static IP
+
+2. Connect to it in a local machine using SSH
+
+3. Go to Harbor's documentation, find the ".tgz" file right click and get the link copy it and run in your terminal that is connected remotely `wget <url>` once downloaded, unzip it with `tar -xzvf <file_path>` -x means extract, -v means verbose meaning you will se logs, -f tells an specific file name you want to extract, at least you need to do a `-xf <file_name>`, `-z` and/or `-v` are optional
+
+4. **To avoid running docker with sudo all the time search on google "docker post install"**, you will find command `sudo groupadd docker`, `sudo usermod -aG docker $USER`. cd to new folder and keep following harbor's installation instructions, got to "configure the Harbor YML file", find it in the folders go to "run installer script" section. Run `sudo ./install.sh`. 
+
+5. Random note: Some people use an ingress like nginx when in their stack when working with Kubernetes however they are difficult to configure and have other disadvantages so API gateway is an alternative that some have used. When you run the installer script if you haven't set up anything else you'll see a message asking for the hostname that the registry service and the admin UI lives in. So in this example the teacher had a domain in digital ocean so on the landing dashboard he enters the domain he bought and copied the IP address of the VM that was created in GCP which is the "External IP" field, paste it in the "will direct to" field in digital ocean and assigns a host name also and in "TTL" 1800 is entered. Just for you to know this DNS/domain lives inside a project that he created in digital ocean. This can be tested with a ping to this DNS, after its successful write in in the .yml file. Save the file and exit
+
+6. Install an HTTPS certificate. Go to "letsencrypt.org" in the get started option and look the instructions that says "Certbot"(We found it under "With Shel Access"). Create it, select your website is running "Other" on "Linux(snap)", follow the instructions bellow, in this case we where given the command `sudo snap install --classic certbot`, all this is done on the VM in GCP. Next command in instructions `sudo ln -s /snap/bin/certbot /usr/bin/certbot` and finally `sudo certbot certonly --standalone -d <domain>` this stand alone option means it is not using a web server, instead the VM itself validates the certificate
+
+7. You will have two certificates, a private and a public cert so go and edit the .yml file that contains the Harbor's configurations and paste the public cert URI in "certificate" and in the private one in the "private_key", now just set up user and password.
+
+8. Install Docker compose you can search for it `apt-cache search docker-compose`, install it `sudo apt-get install docker-compose -y`
+
+9. Run the build command again `sudo ./install.sh`
+
+10. You should be set up by now, just type the domain name in the browser, you'll see Harbor's UI and log in.
+
+11. Create a project, quota limits will be "-1". create a user and add a member as an admin
+
+12. `docker logout` to log out of docker-hub and do `docker login <registry_domain> -u <user>`, enter your password. This is done in a terminal that is not connected to your GCP server
+
+13. Now you can push images to your registry. To check commands to do it go to the "Repositories" tab and look for "PUSH COMMAND" section and look what you need, in our case we did the 'tag an image for this project'. Tag the local image of your choice, check `docker image` to make sure it is good
+
+14. Push your image `docker push <harbor's_server_domain>`, your image is now in your private registry.
+
+15. You can download this private image from anywhere as long as you have the domain of the host, user name and address, from any computer do the same login `docker login <registry_domain> -u <user>`, enter password, and do `docker pull <domain>/<project_name/<image_tag>`
+
+16. For fun lets replicate our docker-hub registry to this private one. In Harbor go to "Registries", click "New Endpoint", enter the info required and create a "replication rule", you might need to select "pull based" in your rule
