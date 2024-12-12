@@ -79,11 +79,11 @@ static int CPUUsagePercentage(void){
 static int write_file(struct seq_file *file, void *v) {
     int percentage = CPUUsagePercentage();
     if (percentage == -1) {
-        seq_printf(file, "{\"error\": \"Error reading file\"}\n");
+        seq_printf(file, "Error reading file\n");
     } else {
         seq_printf(file, "{\n");
-        seq_printf(file, "  \"percentage_used\": %d,\n", percentage);
-        seq_printf(file, "  \"tasks\": [\n");
+        seq_printf(file, "\"percentage_used\": %d,\n", percentage);
+        seq_printf(file, "\"tasks\": [\n");
 
         struct task_struct *task;
         int ram;
