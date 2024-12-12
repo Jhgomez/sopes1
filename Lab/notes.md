@@ -377,3 +377,21 @@ Rule enforced by browsers to control access to data between web applications, is
 
 #### Cross-origin Resource Sharing(CORS)
 Allows resources on a server to be requested from another domain, this might be wanted when for example your web server host two applications meaning you can reach two different applications in the same ip address using a domain name indicator(DNI), this means two applications/websites from the same entity with a sligthtly different domain name might need to enable cross-origin communication. We can configure policies to allow cross-origin communication from another domain. This is accomplish by using HTTP headers to define origin that the browser can permit requests from. The two headers we use here are: `Access-Control-Allow-Origin: <*/origin_domain/ null>` and `Access-Controll_Allow-Credentials: true(no other value)`, the later allows response headers to include cookies, certificates, authorizations, etc.
+
+## Class 6
+
+### GCP
+We can find services that provide autoscaling, we can use scripts(plantillas de instancias) to create configurations and resources and are useful when scaling horizontally. we can create instance groups which are a collection of VM instances. 
+
+#### Cloud Run
+Allows to execute containers right on top of google's infrastructure, no need to create a server
+
+#### Example
+
+1. create VM in GCP
+
+2. connect to that VM via ssh
+
+3. Start installing all dependencies and configurations to that machine and make notes of the commands that are being run to configure the image. In this example we will need to download docker so follow the tutorial in first class
+
+
