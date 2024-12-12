@@ -236,6 +236,8 @@ Is a software that lets track energetic Kubernetes comsumption. Other tools that
 Is basically a private repo or central hub where the building blocks of the containerized applications live. It enables to share and access containers images effortlessly. Docker hub is a public container registry. They are used to store proprietary or sensitive container images. Amazon Elastic Container Registry, Google Container Registry, Azure Container Registry are private registries
 
 ### Harbor Example
+note: kubevirt provides virtualization API for Kubernetes, run and manage virtual machines and containers on same platform
+
 1. Create a VM in GCP, in this example we used a static IP
 
 2. Connect to it in a local machine using SSH
@@ -267,3 +269,18 @@ Is basically a private repo or central hub where the building blocks of the cont
 15. You can download this private image from anywhere as long as you have the domain of the host, user name and address, from any computer do the same login `docker login <registry_domain> -u <user>`, enter password, and do `docker pull <domain>/<project_name/<image_tag>`
 
 16. For fun lets replicate our docker-hub registry to this private one. In Harbor go to "Registries", click "New Endpoint", enter the info required and create a "replication rule", you might need to select "pull based" in your rule
+
+
+# Class 7
+Non-functional attributes, system attributes
+
+## Golden Metrics
+Latency, Traffic, Errors, Saturation. 
+
+In class we made and example of configuring Grafana with MySQL using docker compose. The goal was to load info to MySQL db and generate plots with grafana
+
+1. Generate a docker compose file using copilot, prompt was similar to: "generate a docker-compose.yml file to run graphana and MySQL on my local computer". Build the compose file and go to localhost:3000, that is where Grafana is listening
+
+2. get the info, use `ps -aux` to see resource usage by process and do `ps -ax | awk '{print $1,$4} | tail -5' this will print last 5 processes number and the command it is executing
+
+3. 
