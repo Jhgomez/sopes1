@@ -121,6 +121,12 @@ They are used in containers
 ## **Virtualization**
 Is a hardware and software partitioning technique to create multiple execution environments. We can virtualize machines/hosts, applications, servers, networks, storage, vlans, etc. Statistically servers spend 80% of the time idle and 20% of time processing computations, that is why creating several execution environments in a computer is very important/convenient to reduce costs. The best scalability approach is combining both vertical and horizontal scalability. There is types of virtualization. OS virtualization like containers, hybrid and native virtualization.
 
+### Types
+* Full virtualization: Full simulation of hardware behavior over a VM
+* Paravirtualization: Partial simulation of hardware behavior over a VM
+* Operating System Virtualization: Virtualization based on a simple instance of the OS, containers use this
+* Native or Hybrid: Full and paravirtualization, combining I/O(E/S) acceleration
+
 ### Hypervisor
 Is the software or component in charge of creating virtual machines, its also known as Virtual Machine Monitor(VMM). There are some processors that support virtualization, so they will obviously perform better. There are different types of hypervisors, rings from 0 to 2 like VMware, ESXI, KVM, HyperV. Tip
 
@@ -129,7 +135,7 @@ Is the software or component in charge of creating virtual machines, its also kn
 They usually are more than 1GB. They contain the full OS so it contains the apps, system libraries, and kernel on top of another system which means a kernel on top of a kernel. We can not see processes in the VM from a monitor from the host
 
 #### Containers
-They don't contain the full OS, they just contain the apps and libs and they depend on the kernel of the host OS, this means for example if we are installing a Linux container we need to install it in Linux OS, it uses CGROUPS to be able to do segmentations of memory, they are literally like folders with binaries inside and CGROUPS assigns them memory and IP address, kernel has to have some flags activated or setup to be able to use CGROUPS. You can activate these flags in Linux search for the "firmware" folder inside it it should have the "cmdline.txt" file and edit it with something like nano, `cgroup_enable=cpuset cgroup_memory=1 cgropu_enable=memory`. We can see container processes from host, they are faster, smaller but is dangerous to kill a process from the host
+They don't contain the full OS, they just contain the apps and libs and they depend on the kernel of the host OS, this means for example if we are installing a Linux container we need to install it in Linux OS, it uses CGROUPS to be able to do segmentations of memory, they are literally like folders with binaries inside and CGROUPS assigns them memory and IP address, kernel has to have some flags activated or setup to be able to use CGROUPS. You can activate these flags in Linux search for the "firmware" folder inside it it should have the "cmdline.txt" file and edit it with something like nano, `cgroup_enable=cpuset cgroup_memory=1 cgropu_enable=memory`. We can see container processes from host, they are faster, smaller but is dangerous to kill a process from the host. The virtualization it uses is of "operating system virtualization" type 
 
 ##### commands
 * `ssh developer@192.168.0.9`: I think this code lets us use ssh to connect to a remote computer
