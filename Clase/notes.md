@@ -149,6 +149,11 @@ They don't contain the full OS, they just contain the apps and libs and they dep
 * `ps -aux`: displays processes * 
 * `vi <file_name>`: creates a file and opens it in visual editor but nano may be better for new users
 * `wget <url>`: lets download files from internet
+* `ps -aux`: Lists all processes and its info
+* `kill <PID>>`: Kills a process being executed
+* `kill -a <PID>`: Force to kill a process
+* `killall <name>`: Force to kill process by name
+* `top` and `htop`: Monitors processes in real time
 
 #### MicroVm
 It has almost all OS inside it but it has an agent that makes it load lightly and fast without unnecessary tools/programs/libs, so it will execute like a Full VM and not a container. Its size is similar to a container but behaves like a full VM. VM processes are not visible from the host, so it can be used when we want to encapsulate those process and want to secure them that way. AWS lambda runs on a microVM. 
@@ -283,4 +288,50 @@ In class we made and example of configuring Grafana with MySQL using docker comp
 
 2. get the info, use `ps -aux` to see resource usage by process and do `ps -ax | awk '{print $1,$4} | tail -5' this will print last 5 processes number and the command it is executing
 
-3. 
+# Class 8
+## Processes
+In SO GNU/Linux we can find the processes info in "/proc", a directory is created for each process ID, so basically a list of processes ID. A host can monitor/see a guest processes info. You can enter a process directory and check more file with the process info there, like "statm" which is the memory used by the process
+
+Commands to manage processes in GNU/Linux due to kernel's monolithic nature: 
+* `ps -aux`: Lists all processes and its info
+* `kill <PID>>`: Kills a process being executed
+* `kill -a <PID>`: Force to kill a process
+* `killall <name>`: Force to kill process by name
+* `top` and `htop`: Monitors processes in real time
+
+There is three concepts we need to know when talking about processes:
+
+* Process: Is a program in execution
+* Task: Is creation of the process resources
+* Thread: Is the unit of a process execution
+
+When a process is finalized the process structure should be removed from memory, but sometimes this could fail for some reason and it is called "zombie process", is dead in memory but alive in stack
+
+### Process States
+* New
+* Ready
+* Running / Waiting(when needs to interact with hardware like I/O)
+* Finalized
+
+## Scheduler
+Is a program that assigns processes to a CPU. There is different types and disciplines.
+
+### Types
+* Long-term: Puts process with ready state to memory
+* Medium-term: Manages which Process in RAM are passed to virtual memory
+* Short-term: Manages process in ready state and puts them in running state to be executed in CPU
+
+### Disciplines
+* FIFO
+* Shortest remaining time, manages processes by the time their are going to spend in execution
+* Fixed priority pre-emptive, manages processes by their priority
+* Round Robin(circle of processes), processes take similar turns to execute.
+* Multilevel queue, groups processes by different tags like user, administrator processes and executes them based on their group/tag 
+
+## Process Control Block(PCB)
+The structure that manages process in C is called PCB, is used to manage their lifecycle by the scheduler, their structure/properties are:
+
+* Proccess ID
+* Name
+* Priority
+* State
