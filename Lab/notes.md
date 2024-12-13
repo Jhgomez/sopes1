@@ -316,7 +316,7 @@ WSL2 default kernel doesn't allow to load modules, and it doesn't have headers w
 
 3. Build the module executable. I'm using Ubuntu in WSL2, so if needed do `sudo apt install make`. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "ram.ko" file
 
-4. Install/load the module with `sudo insmod ram.ko`
+4. Install/load the module with `sudo insmod ram.ko`, if you need to remove a module do `rmmod <module_name>`
 
 5. Check messages with command `dmesg` that way you'll see the log message we printed in our module
 
