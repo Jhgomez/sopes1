@@ -369,7 +369,7 @@ ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", "ls");
 ## Building a Rest Api in Golang
 Some important libraries we will use are "gorilla/mux", you can get a first insight with [this info](https://medium.com/@fasgolangdev/creating-rest-apis-in-golang-a-guide-with-framework-examples-49601fdb09e0), navigating through [their repo](https://github.com/gorilla) I can see in the mux library they talk about handlers  "gorilla/handlers" they are know as middle ware, you might want to use them although is not necessary. We will use [this Go Http client](https://pkg.go.dev/net/http) called "net/http"
 
-After definning your dependencies in your file execute on command line from the file you have your source code `go mod tidy` this will generate a `go.mod` file which is where the actual dependencies are declared, this command will add any missing dependency in the .mod file. You might also need to do a `go get` see packages missing and then `go get <git_hub>` if packages are not working, also make sure libraries in git hub that contain dependencies are declare on top fo file.
+After definning your dependencies in your file execute on command line from the file you have your source code `go mod init <go_file_name>` and `go mod tidy` this will generate a `go.mod` file which is where the actual dependencies are declared, this command will add any missing dependency in the .mod file. You might also need to do a `go get` see packages missing and then `go get <git_hub>` if packages are not working, also make sure libraries in git hub that contain dependencies are declare on top fo file. Run the program `go run <file_name>`
 
 ### Note
 #### Same-origin Policy(SOP)
