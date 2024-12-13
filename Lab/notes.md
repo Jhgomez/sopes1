@@ -387,6 +387,7 @@ We can find services that provide autoscaling, we can use scripts(plantillas de 
 Allows to execute containers right on top of google's infrastructure, no need to create a server
 
 #### Example
+Creating a VM with a script, the script was loaded to the class [repo](https://github.com/Allenrovas/SO1_VAC_DIC_2024/blob/main/Clase6/script.txt)
 
 1. create VM in GCP
 
