@@ -12,7 +12,23 @@ Our backend will have just two queries at the beginning, it will accept two post
 
 	* We need three objects, both will have an IP to identify the VM they belong to and a date to be sorted historically, the three objects are: CPU_usage, RAM_usage and process
 
+3. Create an Docker-hub account
+
 3. Download a container with SQL server installed
+
+4. Create the data base schema
+
+5. Create a Docker file, I used these examples, [one](https://dev.mysql.com/doc/refman/8.0/en/data-directory-initialization.html), [two](https://eloquentcode.com/create-a-mysql-docker-container-with-a-predefined-database) and [three](https://www.baeldung.com/ops/docker-mysql-container). In mostly used one and three as a guide, in the two option you can see how a database would be initialized. From this sources at least we can see two different ways to initialize a DB, either using Docker way with a "docker-entrypoint-initdb.d" or with sql's flag "--init-file=".
+
+6.  We need to create an image that adds the layers we declared in our Dockerfile so we can then spin up containers with the configurations we specified. Run `docker build -t <repository_name>/<image:tag>:<version_tag> .`, the `repository_name` will help us push it to our docker hub account if we want to do so later but this field is optional, `version_tag` is optional. 
+
+7. If we want to test the image we need to build a container from it. In section [Docker Environment Variables](https://dev.mysql.com/doc/refman/8.0/en/docker-mysql-more-topics.html) we can see that in MYSQL a default DB will be created if we pass a "MYSQL_DATABASE" variable, also if we set up the "MYSQL_USER" and "MYSQL_PASSWORD" it will be created and granted superuser permissions. Spin a container up with `docker run -p <host_port>:<constainer_port> -e MYSQL_DATABASE=<name> -e MYSQL_USER=<user> -e MYSQL_PASSWORD=<pass> --name=<container_name> <image_name>`, you can add `-it` and/or `-d` before image name. the image name will be looked into your docker repo first and if not exists it will check the public registry
+
+8. The container is running now. You have different options connect to the DB server, first is from command line within the container, to do that make sure server is running with `docker ps` or `docker ps -a`, then from a command line run `docker -exec -it <containter_name> /bin/bash`, this will access the container CLI, then as indicated in [sql documentation](https://dev.mysql.com/doc/refman/8.4/en/connecting-disconnecting.html) run `MySQL -h <host(like localhost)> -u <user> -p` and enter the password if you didn't set up a user you should use the default "root" user. You're connected, you can execute queries here like `USE <db_name>` and select or insert, etc. Other options is to use an db administration tool like beaver to access it outside the container, basically enter the interface and enter same info, in beaver you might need enable flag `allowPublicKeyRetrieval` to true. At this point DB is configured
+
+7. 
+
+* spefify image FROM
 
 RAM json structure
 
