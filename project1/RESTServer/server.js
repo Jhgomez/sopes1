@@ -1,7 +1,5 @@
 import express from 'express';
-// import mysql from 'mysql';
 import mysqlx from '@mysql/xdevapi';
-import axios from 'axios';
 
 const app = express();
 
@@ -28,8 +26,7 @@ const port = process.env.PORT
 
 // if(port == undefined) throw new Error("Pls make sure a PORT env var is set up correctly for API server")
 
-// Middleware to parse JSON requests
-app.use(express.json());
+
 
 app.listen(8080, () => {
   console.log(`API's Server listening on port ${port}`);
@@ -43,7 +40,7 @@ app.post('/ram', (req, res) => {
   const ipAddress = req.socket.remoteAddress
   const body = req.body
 
-  console.log(`inserting ram ${body}`);623
+  console.log(`inserting ram ${body}`)
 
   client
     .getSession()
@@ -62,35 +59,49 @@ app.post('/ram', (req, res) => {
     res.send('ram inserted')
 })
 
+app.post('/cpu', (req, res, next) => {
+  const ipAddress = req.socket.remoteAddress
+  const body = req.body
 
-// pool.end(function (err) {
-//   // all connections in the pool have ended
-// });
-
-// var sql = "SELECT * FROM ?? WHERE ?? = ?";
-// var inserts = ['users', 'id', userId];
-// sql = mysql.format(sql, inserts);
-
-// connection.query('SELECT * FROM posts')
-//   .stream({highWaterMark: 5})
-//   .pipe(...);
+  console.log(`inserting cpu ${body.toString()}`)
 
 
-// JOINS with overlapping column names
+    client
+    .getSession()
+    .then( session => {
+      session.sql('USE monitor').execute();
+      // session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
 
-// var options = {sql: '...', nestTables: true};
-// connection.query(options, function (error, results, fields) {
-//   if (error) throw error;
-//   /* results will be an array like this now:
-//   [{
-//     table1: {
-//       fieldA: '...',
-//       fieldB: '...',
-//     },
-//     table2: {
-//       fieldA: '...',
-//       fieldB: '...',
-//     },
-//   }, ...]
-//   */
-// });
+      // session.sql('INSERT IGNORE INTO cpu (percentage_used, ip) VALUES (?, ?)').bind(body.percentage_used, ipAddress).execute()
+
+      console.log(`tasks son: ${body.percentage_used}`)     
+
+      body.tasks.forEach(task => {
+        console.log(task.pid + task.name + task.state + task.puser + task.ram + task.father + ipAddress)
+        session
+          .sql('INSERT INTO process (pid, name, state, puser, ram, father, ip) VALUES (?, ?, ?, ?, ?, ?, ?)')
+          .bind(task.pid, task.name, task.state, task.puser, task.ram, task.father, ipAddress)
+          .execute()
+          .catch(function (err) {
+            next(err)  // expressjs error handling
+            res.status(400)
+            try {
+              res.send("rows not inserted" + err.message)
+            } catch (error) {
+              
+            }
+          })
+          .then( result => {
+            console.log('ram row inserted')
+
+            try {
+              res.send('ram inserted')  
+            } catch (error) {
+              
+            }
+            
+            session.close()
+          }) 
+      })
+    })
+  }) 
