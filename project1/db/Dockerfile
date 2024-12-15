@@ -18,6 +18,9 @@ FROM mysql:latest
 
 COPY ./initDB.sql /tmp
 
+EXPOSE 3306
+EXPOSE 33060
+
 CMD [ "mysqld", "--init-file=/tmp/initDB.sql" ]
 
 # spin container up with the following command: `docker build -t <repo_name>/<container_tag(I used monitordb)>:<version_tag> .`, in this command
