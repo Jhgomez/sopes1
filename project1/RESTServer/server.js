@@ -46,10 +46,14 @@ app.post('/ram', (req, res) => {
     .getSession()
     .then( session => {
       session.sql('USE monitor').execute();
+
       session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
+
       session
         .sql('INSERT INTO ram (total_ram, free_ram, used_ram, percentage_used, ip) VALUES (?, ?, ?, ?, ?)')
-        .bind(body.total_ram, body.free_ram, body.used_ram, body.percentage_used, ipAddress).execute()
+        .bind(body.total_ram, body.free_ram, body.used_ram, body.percentage_used, ipAddress)
+        .execute()
+
       return session.close()
     })
     .catch(function (err) {
@@ -70,9 +74,10 @@ app.post('/cpu', (req, res, next) => {
     .getSession()
     .then( session => {
       session.sql('USE monitor').execute();
-      // session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
 
-      // session.sql('INSERT IGNORE INTO cpu (percentage_used, ip) VALUES (?, ?)').bind(body.percentage_used, ipAddress).execute()
+      session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
+
+      session.sql('INSERT IGNORE INTO cpu (percentage_used, ip) VALUES (?, ?)').bind(body.percentage_used, ipAddress).execute()
 
       console.log(`tasks son: ${body.percentage_used}`)     
 
@@ -104,4 +109,6 @@ app.post('/cpu', (req, res, next) => {
           }) 
       })
     })
-  }) 
+  })
+
+  
