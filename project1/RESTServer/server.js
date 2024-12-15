@@ -1,18 +1,28 @@
 import express from 'express';
-import mysql from 'mysql';
+// import mysql from 'mysql';
+import mysqlx from '@mysql/xdevapi';
+import axios from 'axios';
 
 const app = express();
 
 app.use(express.json())
 
-var pool = mysql.createPool({
-  connectionLimit : 10,
-  host            : 'localhost',
-  user            : 'monitor',
-  password        : 'monitor',
-  database        : 'monitor',
-  port            : 3306
-});
+var client = mysqlx.getClient(
+  {
+    host            : 'localhost',
+    user            : 'monitor',
+    password        : 'monitor',
+    port            : 33060       // x protocol port
+  }, 
+  { 
+    pooling: { 
+      enabled: true,
+      maxIdleTime: 30000,
+      maxSize: 5, 
+      queueTimeout: 10000 
+    } 
+  }
+);
 
 const port = process.env.PORT
 
@@ -33,27 +43,29 @@ app.post('/ram', (req, res) => {
   const ipAddress = req.socket.remoteAddress
   const body = req.body
 
-  console.log(`inserting ram ${body}`);
-  
-  pool.query(
-    'INSERT INTO vm (ip) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-    [body.total_ram, body.free_ram, body.used_ram, body.percentage_used, ipAddress],
-    function (error, results, fields) {
-      if (error) throw error;
-      
-  });
+  console.log(`inserting ram ${body}`);623
 
-  res.send('ram inserted')
-  // pool.query('INSERT INTO ram1 + 1 AS solution', function (error, results, fields) {
-  //   if (error) throw error;
-  //   console.log('The solution is: ', results[0].solution);
-  // });
+  client
+    .getSession()
+    .then( session => {
+      session.sql('USE monitor').execute();
+      session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
+      session
+        .sql('INSERT INTO ram (total_ram, free_ram, used_ram, percentage_used, ip) VALUES (?, ?, ?, ?, ?)')
+        .bind(body.total_ram, body.free_ram, body.used_ram, body.percentage_used, ipAddress).execute()
+      return session.close()
+    })
+    .catch(function (err) {
+      console.log('data base error: ' + err.message);
+    })
+    
+    res.send('ram inserted')
 })
 
 
-pool.end(function (err) {
-  // all connections in the pool have ended
-});
+// pool.end(function (err) {
+//   // all connections in the pool have ended
+// });
 
 // var sql = "SELECT * FROM ?? WHERE ?? = ?";
 // var inserts = ['users', 'id', userId];

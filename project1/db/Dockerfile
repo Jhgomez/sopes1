@@ -27,4 +27,4 @@ CMD [ "mysqld", "--init-file=/tmp/initDB.sql" ]
 # we will use compose to run containers and to do that we can access the containers either by pushing it to your docker 
 # hub and then reference it from the docker hub registry directly in compose script or you could copy this docker file and
 # add a "context" field with the path to this file to the compose file. I will push it to my hub profile
-# To upload it to docker hub run this command: first, `docker build -t monitordb .`. Second,  `docker tag apache <usuarioDockerHub>/<tag>`
+# To upload it to docker hub run this command: first, `docker build -t monitordb .`. Second,  `docker tag apache <usuarioDockerHub>/<tag>`. X protocol will expose port 33060

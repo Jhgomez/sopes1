@@ -9,7 +9,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^4.21.2",
-    "mysql": "^2.18.1"
+    "@mysql/xdevapi": "8.0.35",
+    "axios": "^1.7.9",
+    "express": "^4.21.2"
   }
 }
