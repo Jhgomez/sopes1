@@ -1,7 +1,7 @@
 import express from 'express'
 import mysqlx from '@mysql/xdevapi'
 
-const app = express();
+const app = express()
 
 app.use(express.json())
 
@@ -12,7 +12,7 @@ var client = mysqlx.getClient(
     host            : process.env.DB_HOST,
     user            : process.env.DB_USER,
     password        : process.env.DB_PASSWORD,
-    port            : process.env.DB_PORT       // x protocol port
+    port            : process.env.DB_PORT       // x protocol port, using 33060
   }, 
   { 
     pooling: { 
@@ -22,19 +22,13 @@ var client = mysqlx.getClient(
       queueTimeout: 10000 
     } 
   }
-);
+)
 
-// if(port == undefined) throw new Error("Pls make sure a PORT env var is set up correctly for API server")
-
-
-
-app.listen(8080, () => {
-  
-});
+app.listen(8080, () => { console.log('app listening on port 8080') });
 
 app.get('/', (req, res) => {
-    res.send('Hello, Express!');
-});
+    res.send('Hello, Express!')
+})
 
 app.post('/ram', (req, res) => {
   const ipAddress = req.socket.remoteAddress
@@ -42,15 +36,8 @@ app.post('/ram', (req, res) => {
 
   console.log(`inserting ram ${body}`)
 
-  mysqlx
-    .getSession(
-      {
-        host            : process.env.DB_HOST,
-        user            : process.env.DB_USER,
-        password        : process.env.DB_PASSWORD,
-        port            : process.env.DB_PORT       // x protocol port
-      }
-    )
+  client
+    .getSession()
     .then( session => {
       session.sql(`USE ${dbname}`).execute();
 
@@ -60,8 +47,16 @@ app.post('/ram', (req, res) => {
         .sql('INSERT INTO ram (total_ram, free_ram, used_ram, percentage_used, ip) VALUES (?, ?, ?, ?, ?)')
         .bind(body.total_ram, body.free_ram, body.used_ram, body.percentage_used, ipAddress)
         .execute()
+        .catch(function (err) {
+          next(err)  // expressjs error handling
+          session.close()
+          res.status(400)
+          res.send("ram info not inserted:" + err.message)
+        }).then( _ => {
+          res.send('ram info inserted')  
+          session.close()
+        })
 
-      return session.close()
     })
     .catch(function (err) {
       console.log('data base error: ' + err.message);
@@ -74,7 +69,7 @@ app.post('/cpu', (req, res, next) => {
   const ipAddress = req.socket.remoteAddress
   const body = req.body
 
-  console.log(`inserting cpu ${body.toString()}`)
+  console.log(`inserting cpu`)
 
 
     client
@@ -84,9 +79,26 @@ app.post('/cpu', (req, res, next) => {
 
       session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
 
-      session.sql('INSERT IGNORE INTO cpu (percentage_used, ip) VALUES (?, ?)').bind(body.percentage_used, ipAddress).execute()
+      session
+        .sql('INSERT IGNORE INTO cpu (percentage_used, ip) VALUES (?, ?)')
+        .bind(body.percentage_used, ipAddress)
+        .execute()
+        .catch(function (err) {
+          next(err)  // expressjs error handling
+          res.status(400)
+          res.send("cpu info not inserted:" + err.message)
+        })
+        .then( result => {
+          console.log('process row inserted')
 
-      console.log(`tasks son: ${body.percentage_used}`)     
+          try {
+            res.send('process inserted')  
+          } catch (error) {
+            
+          }
+        }) 
+
+      console.log(`inserting processes`)     
 
       body.tasks.forEach(task => {
         console.log(task.pid + task.name + task.state + task.puser + task.ram + task.father + ipAddress)
@@ -96,18 +108,18 @@ app.post('/cpu', (req, res, next) => {
           .execute()
           .catch(function (err) {
             next(err)  // expressjs error handling
-            res.status(400)
             try {
-              res.send("rows not inserted" + err.message)
+              res.status(400)
+              res.send("processes rows not inserted" + err.message)
             } catch (error) {
               
             }
           })
           .then( result => {
-            console.log('ram row inserted')
+            console.log('process row inserted')
 
             try {
-              res.send('ram inserted')  
+              res.send('process inserted')  
             } catch (error) {
               
             }
