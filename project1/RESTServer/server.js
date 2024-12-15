@@ -1,16 +1,18 @@
-import express from 'express';
-import mysqlx from '@mysql/xdevapi';
+import express from 'express'
+import mysqlx from '@mysql/xdevapi'
 
 const app = express();
 
 app.use(express.json())
 
+const dbname = process.env.DB_NAME
+
 var client = mysqlx.getClient(
   {
-    host            : 'localhost',
-    user            : 'monitor',
-    password        : 'monitor',
-    port            : 33060       // x protocol port
+    host            : process.env.DB_HOST,
+    user            : process.env.DB_USER,
+    password        : process.env.DB_PASSWORD,
+    port            : process.env.DB_PORT       // x protocol port
   }, 
   { 
     pooling: { 
@@ -22,14 +24,12 @@ var client = mysqlx.getClient(
   }
 );
 
-const port = process.env.PORT
-
 // if(port == undefined) throw new Error("Pls make sure a PORT env var is set up correctly for API server")
 
 
 
 app.listen(8080, () => {
-  console.log(`API's Server listening on port ${port}`);
+  
 });
 
 app.get('/', (req, res) => {
@@ -42,10 +42,17 @@ app.post('/ram', (req, res) => {
 
   console.log(`inserting ram ${body}`)
 
-  client
-    .getSession()
+  mysqlx
+    .getSession(
+      {
+        host            : process.env.DB_HOST,
+        user            : process.env.DB_USER,
+        password        : process.env.DB_PASSWORD,
+        port            : process.env.DB_PORT       // x protocol port
+      }
+    )
     .then( session => {
-      session.sql('USE monitor').execute();
+      session.sql(`USE ${dbname}`).execute();
 
       session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
 
@@ -73,7 +80,7 @@ app.post('/cpu', (req, res, next) => {
     client
     .getSession()
     .then( session => {
-      session.sql('USE monitor').execute();
+      session.sql(`USE ${dbname}`).execute();
 
       session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
 
