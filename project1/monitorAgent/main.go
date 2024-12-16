@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os/exec"
@@ -68,7 +70,7 @@ func postScheduledData() {
 				fmt.Println(err)
 			}
 			// Send Post
-			//url := "http://localhost:8080/cpu"
+			url := "http://localhost:8080/cpu"
 			// Send cpu_info which is a json
 			p_cpu, err := cpu.Percent(time.Second, false)
 			if err != nil {
@@ -77,19 +79,21 @@ func postScheduledData() {
 			cpu_info.Usage = p_cpu[0]
 			jsonValue, _ := json.Marshal(cpu_info)
 			fmt.Println(string(jsonValue))
+
 			// Send json to URI
-			//response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
-			//if err != nil {
-			//	fmt.Println(err)
-			//} else {
-			//	defer response.Body.Close()
-			//	responseBody, err := ioutil.ReadAll(response.Body)
-			//	if err != nil {
-			//		fmt.Println(err)
-			//	} else {
-			//		fmt.Println("\x1b[32m", string(responseBody), "\x1b[0m")
-			//	}
-			//}
+			response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				defer response.Body.Close()
+				responseBody, err := io.ReadAll(response.Body)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					fmt.Println("\x1b[32m", string(responseBody), "\x1b[0m")
+				}
+			}
+
 			fmt.Println(" ")
 			fmt.Println("======= RAM MODULE DATA =======")
 			fmt.Println(" ")
@@ -108,23 +112,24 @@ func postScheduledData() {
 			}
 
 			// Send Resonse
-			// url = "http://localhost:8080/ram"
+			url = "http://localhost:8080/ram"
 			// Sends ram_info in a json
 			jsonValue, _ = json.Marshal(ram_info)
 			fmt.Println(string(jsonValue))
+
 			// Send json to URI
-			//response, err = http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
-			//if err != nil {
-			//	fmt.Println(err)
-			//} else {
-			//	defer response.Body.Close()
-			//	responseBody, err := ioutil.ReadAll(response.Body)
-			//	if err != nil {
-			//		fmt.Println(err)
-			//	} else {
-			//		fmt.Println("\x1b[32m", string(responseBody), "\x1b[0m")
-			//	}
-			//}
+			response, err = http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				defer response.Body.Close()
+				responseBody, err := io.ReadAll(response.Body)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					fmt.Println("\x1b[32m", string(responseBody), "\x1b[0m")
+				}
+			}
 			fmt.Println(" ")
 		}
 	}
