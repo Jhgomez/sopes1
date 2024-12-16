@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
     res.send('Hello, Express!')
 })
 
-app.post('/ram', (req, res) => {
+app.post('/ram', (req, res, next) => {
   const ipAddress = req.socket.remoteAddress
   const body = req.body
 
@@ -52,6 +52,7 @@ app.post('/ram', (req, res) => {
           session.close()
           res.status(400)
           res.send("ram info not inserted:" + err.message)
+          throw new Error(err)
         }).then( _ => {
           res.send('ram info inserted')  
           session.close()
@@ -59,10 +60,9 @@ app.post('/ram', (req, res) => {
 
     })
     .catch(function (err) {
+      next(err)
       console.log('data base error: ' + err.message);
     })
-    
-    res.send('ram inserted')
 })
 
 app.post('/cpu', (req, res, next) => {
@@ -100,7 +100,7 @@ app.post('/cpu', (req, res, next) => {
 
       console.log(`inserting processes`)     
 
-      body.tasks.forEach(task => {
+      body.tasks?.forEach(task => {
         console.log(task.pid + task.name + task.state + task.puser + task.ram + task.father + ipAddress)
         session
           .sql('INSERT INTO process (pid, name, state, puser, ram, father, ip) VALUES (?, ?, ?, ?, ?, ?, ?)')
@@ -127,6 +127,10 @@ app.post('/cpu', (req, res, next) => {
             session.close()
           }) 
       })
+
+      if (body.tasks == undefined) {
+        session.close()
+      }
     })
   })
 
