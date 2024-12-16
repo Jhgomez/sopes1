@@ -27,11 +27,18 @@ var client = mysqlx.getClient(
 app.listen(8080, () => { console.log(`app listening on port 8080, host:${process.env.DB_HOST}`) });
 
 app.get('/', (req, res) => {
-    res.send('Hello, Express!')
+    res.send('Bishitus bebe')
 })
 
 app.post('/ram', (req, res, next) => {
-  const ipAddress = req.socket.remoteAddress
+  let ipAddress = req.header('x-forwarded-for')
+
+  if (ipAddress == undefined) {
+    ipAddress = req.socket.remoteAddress
+  }
+
+  if (ipAddress.startsWith("::ffff:")) ipAddress = ipAddress.substring(7)
+
   const body = req.body
 
   console.log(`inserting ram ${body}`)
@@ -48,14 +55,24 @@ app.post('/ram', (req, res, next) => {
         .bind(body.total_ram, body.free_ram, body.used_ram, body.percentage_used, ipAddress)
         .execute()
         .catch(function (err) {
-          next(err)  // expressjs error handling
-          session.close()
-          res.status(400)
-          res.send("ram info not inserted:" + err.message)
-          throw new Error(err)
+          try {
+            session.close()
+            res.sendStatus(400)
+            next(err)  // expressjs error handling
+            console.log("ram not inserted")
+            return session.close()  
+          } catch (error) {
+            console.log("ram catch catch" + error.message)
+          }
+          
         }).then( _ => {
-          res.send('ram info inserted')  
-          session.close()
+          try {
+            console.log("ram inserted")
+            res.send('ram info inserted')  
+            return session.close() 
+          } catch (error) {
+            console.log("ram inserted catch" + error.message)
+          }
         })
 
     })
@@ -66,7 +83,14 @@ app.post('/ram', (req, res, next) => {
 })
 
 app.post('/cpu', (req, res, next) => {
-  const ipAddress = req.socket.remoteAddress
+  let ipAddress = req.socket.remoteAddress
+
+  if (ipAddress == undefined) {
+    ipAddress = req.socket.remoteAddress
+  }
+
+  if (ipAddress.startsWith("::ffff:")) ipAddress = ipAddress.substring(7)
+
   const body = req.body
 
   console.log(`inserting cpu`)
@@ -85,14 +109,14 @@ app.post('/cpu', (req, res, next) => {
         .execute()
         .catch(function (err) {
           next(err)  // expressjs error handling
-          res.status(400)
-          res.send("cpu info not inserted:" + err.message)
+          console.log("cpu not inserted "+ err.message)
+          res.sendStatus(400)
         })
         .then( result => {
-          console.log('process row inserted')
+          console.log('cpu row inserted')
 
           try {
-            res.send('process inserted')  
+            res.send('cpu inserted')  
           } catch (error) {
             
           }
@@ -109,8 +133,8 @@ app.post('/cpu', (req, res, next) => {
           .catch(function (err) {
             next(err)  // expressjs error handling
             try {
-              res.status(400)
-              res.send("processes rows not inserted" + err.message)
+              res.sendStatus(400)
+              console.log("processes rows not inserted" + err.message)
             } catch (error) {
               
             }
