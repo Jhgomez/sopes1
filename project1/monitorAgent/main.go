@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"time"
 
@@ -70,7 +71,7 @@ func postScheduledData() {
 				fmt.Println(err)
 			}
 			// Send Post
-			url := "http://localhost:8080/cpu"
+			url := fmt.Sprintf("http://%s:8080/cpu", os.Getenv("HOST"))
 			// Send cpu_info which is a json
 			p_cpu, err := cpu.Percent(time.Second, false)
 			if err != nil {
@@ -112,7 +113,7 @@ func postScheduledData() {
 			}
 
 			// Send Resonse
-			url = "http://localhost:8080/ram"
+			url = fmt.Sprintf("http://%s:8080/ram", os.Getenv("HOST"))
 			// Sends ram_info in a json
 			jsonValue, _ = json.Marshal(ram_info)
 			fmt.Println(string(jsonValue))
@@ -136,8 +137,8 @@ func postScheduledData() {
 }
 
 func main() {
-
 	fmt.Println("Starting server... LAB SOPES1")
+	fmt.Println("host is" + os.Getenv("HOST"))
 	router := mux.NewRouter().StrictSlash(true)
 	// Endpoints
 	router.HandleFunc("/", Index).Methods("GET")

@@ -24,7 +24,7 @@ var client = mysqlx.getClient(
   }
 )
 
-app.listen(8080, () => { console.log('app listening on port 8080') });
+app.listen(8080, () => { console.log(`app listening on port 8080, host:${process.env.DB_HOST}`) });
 
 app.get('/', (req, res) => {
     res.send('Hello, Express!')
