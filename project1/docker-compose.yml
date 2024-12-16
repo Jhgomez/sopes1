@@ -1,8 +1,9 @@
 services:
   backend:
-    build:
-      context: ./RESTServer
-      dockerfile: Dockerfile
+    # build:
+    #   context: ./RESTServer
+    #   dockerfile: Dockerfile
+    image: juan523/monitorapi
     ports:
       - "8080:8080"
     environment:
@@ -17,9 +18,10 @@ services:
       - data
 
   data:
-    build:
-      context: ./db
-      dockerfile: Dockerfile
+    # build:
+    #   context: ./db
+    #   dockerfile: Dockerfile
+    image: juan523/monitordb
     ports:
       - "33060:33060"
       - "3306:3306"
@@ -34,8 +36,9 @@ services:
     restart: always
   
   monitor:
-    build:
-      context: ./monitorAgent
+    # build:
+    #   context: ./monitorAgent
+    image: juan523/monitoragent
     ports:
       - "3000:3000"
     privileged: true

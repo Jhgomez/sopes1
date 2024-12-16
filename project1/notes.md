@@ -39,9 +39,9 @@ Our backend will have just two queries at the beginning, it will accept two post
 
 12. We need to containerize this agent also, so I created a docker file following [this example](https://github.com/docker-library/docs/tree/master/golang#how-to-use-this-image) from the official documentation. to create the image locally and run a container do `docker build -t goAgent .` and then `docker run -it -d --name=goAgent -p 3000:3000 goAgent`, remember again, the name ports and image name depends on what you have declared previously.
 
-13. Now I added this to docker compose.
+13. Now I added this to docker compose. In order to be able to communicate over the network we need to know the IP address of each container you can get some insights [here](https://www.tutorialworks.com/container-networking/). We mentioned it earlier but now we confirmed our solution is "Docker Network", we are using the default network. we can resolve to the IP just by using the container name, in our case we are using docker compose to pass this as a variable environment. Now we can do again a `docker compose up`
 
-14. 
+14. Now we are going to edit our docker compose file, we were previously inserting a section in each `service` called `build`, in this build section we inserted two fields, one called `context` which is basically the relative path to the "Dockerfile" we use to build the image, the second one seems to be optional but it is called `dockerfile` which is used to indicate the name of the docker file used to build the image. So we get rid of all of the fields I mentioned, and we have to make sure the we have built our images, if not, just go to each directory and do `docker build -t <tag> .` for each image do a `docker push <tag>` this pushes you images to your repo. Now modify docker file to use `image` field and pass your tag, docker automatically searches into the repository it is logged in, if not found it searches the public registry.
 
 RAM json structure
 
