@@ -31,9 +31,17 @@ Our backend will have just two queries at the beginning, it will accept two post
 
 8. Now we need to containerize the REST api service, to do that I got my first insights [here](https://betterstack.com/community/guides/scaling-nodejs/dockerize-nodejs/) but actually went to the official documentation because I wanted to use Alpine variant of Node official Docker image, the script I found the script I used [here](https://github.com/nodejs/docker-node/blob/main/docs/BestPractices.md#smaller-images-without-npmyarn). Now we could build and image by running within the same directory as Docker with ``docker build -t <tag> .` and then create a container with `docker build -it -d --name=<name> -p 8080:8080 <imgage_tag>`.
 
-9. Now we have two Docker containers, but in orded to communicate them we have two options. First we could implement something called Docker network, for that we would modify our Dockerfiles but we will instead use Docker compose which helps us achieve this. If we would do either, we would have a hard time figuring out the ip address of the database so we can include it in "host" value in the database client connection in the REST API. After creating it run `docker compose up` from the directory from where you compose file is, if have modified the any of the servers code you can rebuild the containers declared in the compose file with `docker-compose up -d --force-recreate --build`
+9. Now we have two Docker containers, but in order to communicate them we have two options. First we could implement something called Docker network, for that we would modify our Dockerfiles but we will instead use Docker compose which helps us achieve this. If we would do either, we would have a hard time figuring out the ip address of the database so we can include it in "host" value in the database client connection in the REST API. After creating it run `docker compose up` from the directory from where you compose file is, if have modified the any of the servers code you can rebuild the containers declared in the compose file with `docker-compose up -d --force-recreate --build`
 
-* spefify image FROM
+10. With the previous step we should be able test the REST API and the database if we build a simple http client that can make an post request to the correct port and correct JSON format, I created a file name "apipost.js" that can be launched with `npm i` and `node apipost.js`
+
+11. Now I need to add the code for the agents, I added two directories each contains a C file and Makefile to generate a kernel module, to generate then you have to be on Linux, I used Ubuntu. for the directory of each module you have to run `make all`, if you get an error you may need to install linux headers `sudo apt-get install linux-headers-generic`. If you are running it from WSL you need to follow the instructions in [laboratory](../Lab/notes.md) "class 4' notes, you will have to compile a Kernel. When you build the modules you will get a ".ko" file for each module, install each using `sudo insmod <moduleName.ko>`, if you do this locally you can then check `dmesg` in the CLI to check the log also you can run them locally `cat /proc/<module_name>`
+
+12. We need to containerize this agent also, so I created a docker file following [this example](https://github.com/docker-library/docs/tree/master/golang#how-to-use-this-image) from the official documentation. to create the image locally and run a container do `docker build -t goAgent .` and then `docker run -it -d --name=goAgent -p 3000:3000 goAgent`, remember again, the name ports and image name depends on what you have declared previously.
+
+13. Now I added this to docker compose.
+
+14. 
 
 RAM json structure
 
