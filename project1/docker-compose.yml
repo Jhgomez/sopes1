@@ -13,6 +13,8 @@ services:
       DB_PORT: 33060
     container_name: 'lnode'
     restart: always
+    depends_on: 
+      - data
 
   data:
     build:
@@ -37,9 +39,14 @@ services:
     ports:
       - "3000:3000"
     privileged: true
+    environment:
+      HOST: lnode
     volumes:
       - /proc:/proc
     restart: always
+    depends_on:
+      - backend
+      - data
 
 volumes:
   mysql: 
