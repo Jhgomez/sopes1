@@ -150,6 +150,6 @@ func main() {
 	origins := handlers.AllowedOrigins([]string{"*"})
 
 	//Start server
-	fmt.Println("Server started at port 5200")
-	log.Fatal(http.ListenAndServe(":5200", handlers.CORS(headers, methods, origins)(router)))
+	fmt.Println("Server started at port 3000")
+	log.Fatal(http.ListenAndServe(":3000", handlers.CORS(headers, methods, origins)(router)))
 }
