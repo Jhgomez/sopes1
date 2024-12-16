@@ -1,9 +1,26 @@
 services:
-  base:
+  backend:
+    build:
+      context: ./RESTServer
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: ldb
+      DB_NAME: monitor
+      DB_USER: monitor
+      DB_PASSWORD: monitor
+      DB_PORT: 33060
+    container_name: 'lnode'
+    restart: always
+
+    data:
       build:
         context: ./db
         dockerfile: Dockerfile
-      container_name: 'ldb'
+      ports:
+        - "33060:33060"
+        - "3306:3306"
       environment:
         MYSQL_ROOT_PASSWORD: monitor
         MYSQL_DATABASE: monitor
@@ -11,23 +28,18 @@ services:
         MYSQL_PASSWORD: monitor
       volumes:
         - mysql:/var/lib/mysql      
-      ports:
-        - "33060:33060"
-        - "3306:3306"
+      container_name: 'ldb'
       restart: always
-  backend:
-    build:
-      context: ./RESTServer
-      dockerfile: Dockerfile
-    container_name: 'lnode'
-    environment:
-      DB_USER: monitor
-      DB_PASSWORD: monitor
-      DB_HOST: ldb
-      DB_PORT: 33060
-      DB_NAME: monitor
-    ports:
-      - "8080:8080"
-    restart: always
+    
+    monitor:
+      build:
+        context: ./monitorAgent
+      ports:
+        - "3000:3000"
+      privileged: true
+      volumes:
+        - /proc:/proc
+      restart: always
+
 volumes:
   mysql: 
