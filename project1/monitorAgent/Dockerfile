@@ -8,8 +8,6 @@ RUN go mod download && go mod verify
 
 COPY . .
 
-RUN insmod ./cpuKernelModule/cpu.ko
-
 RUN go build -v -o /usr/local/bin/app ./...
 
 EXPOSE 3000

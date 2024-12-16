@@ -14,32 +14,32 @@ services:
     container_name: 'lnode'
     restart: always
 
-    data:
-      build:
-        context: ./db
-        dockerfile: Dockerfile
-      ports:
-        - "33060:33060"
-        - "3306:3306"
-      environment:
-        MYSQL_ROOT_PASSWORD: monitor
-        MYSQL_DATABASE: monitor
-        MYSQL_USER: monitor
-        MYSQL_PASSWORD: monitor
-      volumes:
-        - mysql:/var/lib/mysql      
-      container_name: 'ldb'
-      restart: always
-    
-    monitor:
-      build:
-        context: ./monitorAgent
-      ports:
-        - "3000:3000"
-      privileged: true
-      volumes:
-        - /proc:/proc
-      restart: always
+  data:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    ports:
+      - "33060:33060"
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: monitor
+      MYSQL_DATABASE: monitor
+      MYSQL_USER: monitor
+      MYSQL_PASSWORD: monitor
+    volumes:
+      - mysql:/var/lib/mysql      
+    container_name: 'ldb'
+    restart: always
+  
+  monitor:
+    build:
+      context: ./monitorAgent
+    ports:
+      - "3000:3000"
+    privileged: true
+    volumes:
+      - /proc:/proc
+    restart: always
 
 volumes:
   mysql: 
