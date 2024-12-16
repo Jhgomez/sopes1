@@ -35,21 +35,21 @@ services:
     container_name: 'ldb'
     restart: always
   
-  monitor:
-    # build:
-    #   context: ./monitorAgent
-    image: juan523/monitoragent
-    ports:
-      - "3000:3000"
-    privileged: true
-    environment:
-      HOST: lnode
-    volumes:
-      - /proc:/proc
-    restart: always
-    depends_on:
-      - backend
-      - data
+  # monitor:
+  #   # build:
+  #   #   context: ./monitorAgent
+  #   image: juan523/monitoragent
+  #   ports:
+  #     - "3000:3000"
+  #   privileged: true
+  #   environment:
+  #     HOST: lnode
+  #   volumes:
+  #     - /proc:/proc
+  #   restart: always
+  #   depends_on:
+  #     - backend
+  #     - data
 
   grafana:
     image: grafana/grafana-enterprise
@@ -71,7 +71,7 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
     depends_on:
-      - monitor
+      - backend
       
 volumes:
   mysql:
