@@ -50,6 +50,8 @@ app.post('/ram', (req, res, next) => {
 
       session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
 
+      console.log(body.total_ram + " " + body.free_ram + " " + body.used_ram + " " + body.percentage_used + " " + ipAddress)
+     
       session
         .sql('INSERT INTO ram (total_ram, free_ram, used_ram, percentage_used, ip) VALUES (?, ?, ?, ?, ?)')
         .bind(body.total_ram, body.free_ram, body.used_ram, body.percentage_used, ipAddress)
@@ -125,10 +127,10 @@ app.post('/cpu', (req, res, next) => {
       console.log(`inserting processes`)     
 
       body.tasks?.forEach(task => {
-        console.log(task.pid + task.name + task.state + task.puser + task.ram + task.father + ipAddress)
+        console.log(task.pid + " " + task.name + " " + task.state + " " + task.user + " " + task.ram + " " + task.father + " " + ipAddress)
         session
           .sql('INSERT INTO process (pid, name, state, puser, ram, father, ip) VALUES (?, ?, ?, ?, ?, ?, ?)')
-          .bind(task.pid, task.name, task.state, task.puser, task.ram, task.father, ipAddress)
+          .bind(task.pid, task.name, task.state, task.user, task.ram, task.father, ipAddress)
           .execute()
           .catch(function (err) {
             next(err)  // expressjs error handling
