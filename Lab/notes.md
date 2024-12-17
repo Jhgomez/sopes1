@@ -75,6 +75,7 @@ These are some Docker commands you might need
 * Forces removal of specific image:  `docker rmi -f <<id image>>` 
 * List volumes: `docker volume ls`
 * Create a volume: `docker volume create <name>`
+* docker-compose up -d --force-recreate --build
 
 
 ## Installing in Ubuntu
