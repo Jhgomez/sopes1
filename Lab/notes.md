@@ -75,6 +75,7 @@ These are some Docker commands you might need
 * Forces removal of specific image:  `docker rmi -f <<id image>>` 
 * List volumes: `docker volume ls`
 * Create a volume: `docker volume create <name>`
+* docker-compose up -d --force-recreate --build
 
 
 ## Installing in Ubuntu
@@ -316,7 +317,7 @@ WSL2 default kernel doesn't allow to load modules, and it doesn't have headers w
 
 3. Build the module executable. I'm using Ubuntu in WSL2, so if needed do `sudo apt install make`. Make sure you're in the directory that contains both and run `make all` in he CLI. This will produce a "ram.ko" file
 
-4. Install/load the module with `sudo insmod ram.ko`
+4. Install/load the module with `sudo insmod ram.ko`, if you need to remove a module do `rmmod <module_name>`
 
 5. Check messages with command `dmesg` that way you'll see the log message we printed in our module
 
@@ -387,6 +388,7 @@ We can find services that provide autoscaling, we can use scripts(plantillas de 
 Allows to execute containers right on top of google's infrastructure, no need to create a server
 
 #### Example
+Creating a VM with a script, the script was loaded to the class [repo](https://github.com/Allenrovas/SO1_VAC_DIC_2024/blob/main/Clase6/script.txt)
 
 1. create VM in GCP
 
