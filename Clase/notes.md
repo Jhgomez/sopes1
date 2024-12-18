@@ -335,3 +335,43 @@ The structure that manages process in C is called PCB, is used to manage their l
 * Name
 * Priority
 * State
+
+# Class 10
+
+## Parallelism and Concurrency
+
+### Monoprogramming(sequential)
+Just one program executes in a process at a time
+
+### Multiprogramming(Paralel/Asynchronous)
+Programs alternates execution over the same process, it looks like they being executed separately however they are in the same process acutally
+
+### Concurrency
+Several programs exists at the same time but only one is executed, most of the times means there is only one CPU
+
+#### Inheritably and Potential Concurrency
+Inheritably when they are forcibly executing actions simultaneously due to the nature of its environment, cashiers. Doesn't need to  be concurrent but it will benefit the system to speed up cexecution  
+
+### Parallelism
+Exists more than one CPU so more than one program is executed at the same time. Is a particular case of concurrency, basically two or more concurrency executions are happening. Multiprocessors are needed to use parallelism
+
+The scheduler is in charge of deciding what and how processes will be executed on CPU
+
+* Note: you can use `wget` to download files from CLI
+
+### IPC(Inter Process Communication)
+
+#### Mutual Exclusion
+Is an access and computers resource use synchronization strategy. Talking in programmatical terms there is something called "critical region", it exists in between the process start and end which access a resource function. and the critical region lets us implement implement an access resource mechanism
+
+### Interbloqueo(Deadlock)
+Happens when process a is talking to process b and process c is talking to d, if b fails some executions behing, or accros this process will be blocked. It happens due to the mutual exclusion implementation. It happens if all the following are true
+
+- Mutual exclusion: A process access a resource
+- Retention or contention and wait: Process obtains resouces
+- Unpropretivity: Asking for more resources but it already has all resurces
+- Circular waiting: All processes are waiting for the next process to free its resources
+
+If any of the above are false tbe it could be that a very odd situation is happening, called indefinite postergation which means the resources could be free up sometime later
+
+
