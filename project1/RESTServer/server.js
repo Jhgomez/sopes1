@@ -97,6 +97,9 @@ app.post('/cpu', (req, res, next) => {
 
   console.log(`inserting cpu`)
 
+    let free = 100 - parseFloat(body.percentage_used)
+    if(free == undefined) free = 100.0 - parseFloat(body.percentage_used)
+    
 
     client
     .getSession()
@@ -106,8 +109,8 @@ app.post('/cpu', (req, res, next) => {
       session.sql('INSERT IGNORE INTO vm (ip) VALUES (?)').bind(ipAddress).execute()
 
       session
-        .sql('INSERT IGNORE INTO cpu (percentage_used, total, ip) VALUES (?, ?, ?)')
-        .bind(body.percentage_used, 100 - parseFloat(body.percentage_used), ipAddress)
+        .sql('INSERT IGNORE INTO cpu (percentage_used, free, ip) VALUES (?, ?, ?)')
+        .bind(body.percentage_used, free, ipAddress)
         .execute()
         .catch(function (err) {
           next(err)  // expressjs error handling
