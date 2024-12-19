@@ -374,4 +374,152 @@ Happens when process a is talking to process b and process c is talking to d, if
 
 If any of the above are false tbe it could be that a very odd situation is happening, called indefinite postergation which means the resources could be free up sometime later
 
+# Class 11
+
+## Something with K8
+Teacher was not recording the class so I couldn't know what he talked about first.
+
+
+
+`container clusters k8s-demo --num-nodes=1 --tags=allin,allout --machine type=n1-standard-1 --no-enable-network-policy`
+
+It is possible through google's cloud service called GKE 
+
+Search "Deployment Rollout in Kubernetes". The Kubernetes rollout annotation description is done with `Kubernetes.io/change-cause
+
+this is a deployment file: 
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels
+    app: nginx
+  name: nginx
+  annotations:
+    # This is done because the name of the image change, version changed
+    # it writes to a log to keep record of changes
+    Kubernetes.io/change-cause: "version to 1.26.2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.26.2
+        name: nginx
+        resources: {}
+status:  {}
+```
+
+`httpd` is apache web server in docker hub
+
+## Kubernetes Deployments
+We can have more than one ".yaml" file in a folder. When K8 creates a deployment it create a replica set that controls the pods replicas quantity. The name of the pods have a part of the name of the replica set plus something added to it
+
+`kubectl scale --replicas=<quantity> --image=<image_name>`
+`kubectl scale --replicas=<quantity> --deployment/<deploy_name>`
+`kubectl get deployments`
+`kubectl describe deployment <deploy_name>`
+`kubectl edit deployments <deploy_name>`
+`kubectl delete deployments <deploy_name>`
+`kubectl apply -f <name>.yaml`
+
+pod hast to have 4 parts: apiVersion, kind, metadata, spec. Each pod has a container inside it. It has a labels field but they are not too important in its declaration. example:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: podx
+  namespace: minamespace
+  name: podx
+spec:
+  containers:
+  - image: czdev/python-flask-distroless
+    name: podx
+```
+
+build it with: `kubectl apply -f podx.yaml`
+
+A deployment has 4 sections, apiVersion, kind, metadata, spec. Here the labels are ver important.Example:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels
+    app: app1
+  name: app1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: app1
+    spec:
+      containers:
+      - image: nginx
+        name: nginx	
+```
+
+the spec inside spec section has to be the same as in our pod file, this way Kubernetes knows what pods is going to use if it doesn't match it will cause a service to not recognize a pod if it matches it can be directed to a very complex service. In command line we can generate the "yaml" file this way we can be sure it is configure correctly. Build the generated yaml with:
+
+Build it with `kubectl apply -f app1.yaml`
+
+## Troubleshooting pods
+Be aware Kubernetes creates a default namespace, when the cluster is created in the default namespace this argument can be removed
+
+* `kubectl run -it client --rm --image=busybox \ --restart=Never -n minamespace -- sh`: creates a temporary small POD which can help debug, busybox is small build. It is removed on exit due to `-rm` flag
+* `kubecl run -it curl --rm--image=alpine/curl \ --restart=Never --curl http://<a sevice address, it can be a pod ip address, a hostname, inclue por or not>`: if you connect to a POD within your network for example apache web serer you will get some response
+* `kubectl exec -it <pod_name> -n minamespace -- [bash|sh]`: helps access inside pod CLI
+* `kubectl exec -it <pod_name> -c minamespace -- [bash|sh]`: helps access inside pod CLI
+* `kubectl describe pods <pod_name> -n mynamespace`: gives info about the pod
+
+## Services
+To this commands we can add `-o yaml --dry-run` to get the yaml printed on CLI. Kubernetes can talk to another service but you have to move firewall and create rules to be able to do it. When you set up a service it generates the "yaml" serice yaml file and again the labels will match labels in deploy and/od files
+
+* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=ClusterIP`
+* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=NodePort`
+* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=LoadBalancer`
+* `kubectl get serices <my_service_name> -o yaml > <name>.yaml` and `kubectl apply -f servic.yaml`: helps edit a service file
+* `kubectl expose deployment <label_name> --port=80 --target-port=80 --type=LoadBalancer`: Sets up a load balancer
+
+examples:
+* `kubectl expose deploy/nginx --port=80 --type=LoadBalancer --dry-run -o yaml >> deploy.yaml`
+
+
+** Kubernetes Operators
+Is an object that makes a deployment, so we can just send parameters to the operator and the operator makes the deployment. "Helm" is a software that help us create these K8 operators, Helm makes installing packages very easily
+
+## Kubernetes Roll Outs
+
+Kubernetes roll outs are a very powerful feature, we can change versions and even contianers very easily 
+
+Kubernetes Commands
+* `kubectl apply -f deploy.yaml`: Deploys a cluster
+* `kubectl rollout history deploy <deploy_label>`: prints rollout history
+* `kubectl get deploy <deploy_label> -o yml`: displays the yml confingurations on CLI
+* `kubectl rollout undo deployment/<deploy_name> --to-revision=<revision_number>`: sets your deployment to the configuration in that version
+* `kubectl get pods`: shows replicas(pods), use `-A`
+* `kubectl get deploy`: shows deploys and its replicas info
+* `kubectl scale deploy/<deploy_name> --replicas=5
+* `kubectl get rs`: shows replica set
+* `kubectl delete -f .`: deletes
+* `kubectl get all -n minamespace`
+* `kubectl delete pods <deploy_name> -n minamespace` 
+* `kubectl get pods -o wide`: Kubernetes ip, this shows the pods info including their IP
 
