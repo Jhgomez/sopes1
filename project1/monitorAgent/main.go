@@ -48,7 +48,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 // postScheduledData
 func postScheduledData() {
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(20 * time.Second)
 	defer ticker.Stop()
 
 	for {
