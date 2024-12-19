@@ -375,17 +375,102 @@ Happens when process a is talking to process b and process c is talking to d, if
 If any of the above are false tbe it could be that a very odd situation is happening, called indefinite postergation which means the resources could be free up sometime later
 
 # Class 11
-
-## Something with K8
 Teacher was not recording the class so I couldn't know what he talked about first.
 
+It is possible through google's cloud service called GKE. Is under the "Kubernetes engine" and "Clusters". Remember to apply an all in all out firewall rule. If you want to run it from your local machine first install google cloud SDK and then install "kubectl", kubectl credentials are in Clusters>MyCLuster>Details>Show Cluster Certificate
+
+Kubernetes was called "Borg" and it was a Google's project and now is open source
+
+## Create a Cluster
+It will contain an Nginx POD, Nginx is a web server, load balancer, etc. Be aware that the port-forward command is similar to a load balancer but it jus
+
+1. `kubectl run mipod --image=nginx --restart=Never`
+2. `kubectl get pods`: tell the pods that exists
+3. `kubectl port-forward pod/mipod 8080:80`: Redirects POD(running inside a cluster) port 80 to local host 8080
+4. `kubectl delete pods mipod`: try it before running this command since it deletes the POD
+
+## Cluster Custom(V2)
+1. `kubectl run mipod --inmage=nginx --restart=Never`
+2. `kubectl get pods`: tell the pods that exists
+3. `kubectl expose pod/mipod --target-port=80 --port=80 --type=LoadBalancer --name=mipod-svc`: Creates a load balancer service, a loadbalancer is a component with a public IP and services will redirect its traffic to it so the client can access to services only through it. It can take UDP or TCP. It has an extra cost in gcp but the IP will never change. The service/pod we created is now going to be access through a load balancer
+4. `kubectl get services mipod-svc` o `kubectl get services`: shows IP and more
+5. `kubectl get pods -o wide`
+6. `kubectl get nodes -o wide`
+7. `kubectl delete pods mipod` or `kubectl delete services mipod-svc`
+8. `kubectl describe nodes NODE_NAME | grep ExternalIP`
+
+## Cluster Custom(V3)
+1. `kubectl run mipod --image=nginx --restart=Never`
+2. `kubectl get pods`
+3. `kubectl expose pod/mipod --target-port=80 --port=80 --type=NodePort --name=mipod-svc`: syntax to expose port usng the node port which is similar to a port-forward, using node port is not convenient because if the pod dies a new will be created and therefore the IP will change so that is why a load balancer works, just for temporary use or if using an on premise setup, if no type declared default is "ClusterIp". ClusterIp creates an internal DNS name so you can ping or connect using the service name
+4. `kubectl get service`
+5. `kubectl get pods -o wide`
+6. `kubectl get nodes -o wide`: shows IP and more
+7. `kubectl describe nodes <node_name> | grep  ExternalIP`
+
+Just to test the default clusterIP service just do step 1 to 3 and then run this other image which is available in Docker Hub and is called "alpine/curl". So this pod will have an instance of this image
+
+1. `kubectl run -it curl --rm --image=alpine/curl \ --curl http://mipod-svc --restart=Never -- curl http://mipod-svc`: the `--` at the end indicates a command we can execute we could access the pod using `/bin/[bash/sh]` but since we have the curl program in this image we will run it using the mipod alias to connect to the other pod, just like in docker when we connect to another container inside the same docker network, either the default or a custom one, we can use the container name to connect to it without using its IP address specifically.
+2. `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
+
+Try it, on your browser enter http://127.0.0.1:8080 . Like in Docker you have to declare an entry point in some cases in this image the Nginx server already has the entry point defined and that entry point will start the server.
+
+# Kubernetes Objects
+A POD is like a container but it can have several containers inside. It is the smallest 'unit', to update a pod you have to delete it and build it again but if you use a deployment component, which contains pods by using another component, that lives inside the deployment, this replica set will be in charge to create the pods, you will be able to . Pods have one or more containers inside.
+
+PODs memory is not persistent and that is why we need use a component called "persistent volume claim" which is actually like a disk partition from something called "persistent volume" which is like the main hard drive, it uses the storage drivers called "storage class"
+
+## Commands that work with all objects
+* `kubectl get <object_name_in_plural>`
+* `kubectl get <object_name_in_plural> <object>`
+* `kubectl delete <object_name_in_plural> <object>`
+* `kubectl describe <object_name_in_plural> <object>`
+* `KUBE_EDITOR=nano kuebctl edit <object_name_in_plural> <object>`
+* `kubectl get <object_name_in_plural> <object> -o yaml > <object>.yaml`: produces a yaml with the script to produce it
+* `kubectl create -f <object>.yaml`
+* `kubectl delete -f <object>.yaml`
+* `kubectl apply -f <object>.yaml`
+
+You can run this commands but you also have the option of using scripts in yaml files
+
+## POD commands
+### Create and update
+* `kubectl run <podName> --image=<image_name> --restart=Never`
+* `kubectl run <podName> --image=<image_name> --restart=Never \ --dry-run -o yaml > podx.yaml`: runs some sort of simulation, a simulation of creating a pod and stores the configurations in the yaml. if we remove `> podx.yaml` it wont create the file but only print configurations on the screen
+* `kubectl create -f podx.yaml`: creates a pod based on the yaml file
+* `kubectl apply -f podx.yaml`: same as create but if already exists it will force the creation
+
+After we execute the run command we can now expose the pod.
+
+* `kubectl expose <pod_object_type(in this case "pod")/<object_name> --target-port=80 --port=80 --type=ClusterIP --dry-run -o yaml`
+
+This command will create a yaml file with the POD configurations without actually creating the POD, we can run it again to generate a service, to do that once the first file is created use a text editor to add `---` and then run it but this time using double greater than sign `>>`, `>` means create and `>>` means append. If we run this we now will add a service configuration to the script. We can build the script locally with the 	`apply` command and passing the yaml name, then we can check the services created with `kubectl get svc`. This types of scripts can then be read inside a CI/CD pipeline by storing this file in a GitHub repo and the pipeline will be reading this configuration file to deploy them, the tools that are used to do that are "Argo CD" and "Flux", Flux may be the most famous. 
+
+### Delete pods
+* `kubectl delete -f podx.yaml`
+* `kubectl delete pods <pod_name>`
+
+### Get all pods in default namespace
+* `kubectl get pods`
+
+### Show more information
+* `kubectl get pods -o wide`: We can get pods internal info, like internal IP 
+
+## Cluster Nodes
+* Master Node, this node has to have Kubernetes installed: etcd(db thats stores the cluster configs), kube-api(is the api), kube-controller manager(creates some component on cloud is like a balancer for Kubernetes), kube-scheduler(in charge to manage which container runs in which VM), kubectl(in charge to interpret commands in command line), kubelet, core-dns, network-driver
+
+* Worker Nodes: kubelet, kube, kube-proxy. Kube and kube-proxy has a runtime which is based on OCI they talk to the API in master
+
+* Client: kubectl
+
+`container clusters create k8s-demo --num-nodes=1 --tags=allin,allout --machine type=n1-standard-1 --no-enable-network-policy`: creates a cluster in gcloud this is posible with the Google's SDK if you're logged in to your account
+
+# Class 12
+
+## Something with K8
 
 
-`container clusters k8s-demo --num-nodes=1 --tags=allin,allout --machine type=n1-standard-1 --no-enable-network-policy`
-
-It is possible through google's cloud service called GKE 
-
-Search "Deployment Rollout in Kubernetes". The Kubernetes rollout annotation description is done with `Kubernetes.io/change-cause
+Search "Deployment Rollout in Kubernetes" on the internet. The Kubernetes rollout annotation description is done with `Kubernetes.io/change-cause
 
 this is a deployment file: 
 
@@ -522,4 +607,5 @@ Kubernetes Commands
 * `kubectl get all -n minamespace`
 * `kubectl delete pods <deploy_name> -n minamespace` 
 * `kubectl get pods -o wide`: Kubernetes ip, this shows the pods info including their IP
-
+* `kubectl get nodes`: 
+* `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
