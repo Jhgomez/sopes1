@@ -456,6 +456,50 @@ This command will create a yaml file with the POD configurations without actuall
 ### Show more information
 * `kubectl get pods -o wide`: We can get pods internal info, like internal IP 
 
+## POD file parts
+pod hast to have 4 parts: apiVersion(release name or tag), kind(object type), metadata(objects info, regularly contains name, namespace and labels), spec(configurations specific to the object). Each pod has a container inside it. It has a labels field but they are not too important in its declaration. example:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: podx
+  namespace: minamespace
+  name: podx
+spec:
+  containers:
+  - image: czdev/python-flask-distroless
+    name: podx
+```
+
+## Commands to work faster
+* `--dry-run`: to simulate an execution without building actually storing the generating object
+* `-o yaml > <name>.yaml`: puts the configurations into a YAML file
+* `--dry-run -o yaml > archivo.yaml`: combine these last two
+
+## Namespace
+You can think of namespace as folder, you would create these 'folder' in which you can create all objects inside a POD inside this 'folder' this will create some sort of sandbox or environment for the objects inside it. They can be added to an objects metadata in the YAML file with the `namespace: <namespace_name>`.Their YAML file looks like:
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: minamespace
+spec: {}
+status: {}
+```
+
+### Namespace Commands
+* `kubectl create namespace <name>`: the default namespace is called "default", if we don't create one this one is created along with other two, "kube-public", everything here can be accessed from any namespace and "kube-system", this one is specific to the cluster's components
+* `kubectl get ns`: 
+* `kubectl delete ns <namespace_name>`
+* `kubectl apply -f <namespace_name>`: create the namespace
+* `kubectl run <pod_name> --image=<image_name> --restart=Never -n <namespace_name>`: Creates a pods within an specific namespace
+* `kubectl get pods -n <namespace_name>`: gets pods in the specified namespace
+* remember we can add the `-o yaml` and/or `--dry-run` to produce a yaml file and/or spinning up a namespace without actually creating one
+
 ## Cluster Nodes
 * Master Node, this node has to have Kubernetes installed: etcd(db thats stores the cluster configs), kube-api(is the api), kube-controller manager(creates some component on cloud is like a balancer for Kubernetes), kube-scheduler(in charge to manage which container runs in which VM), kubectl(in charge to interpret commands in command line), kubelet, core-dns, network-driver
 
@@ -609,3 +653,4 @@ Kubernetes Commands
 * `kubectl get pods -o wide`: Kubernetes ip, this shows the pods info including their IP
 * `kubectl get nodes`: 
 * `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
+* `kubectl get all <-n <namespace_name>>(this is optional)`: returns all objects in a optionally specified namespace if not it could be the default or global namespace objects that will be returned
