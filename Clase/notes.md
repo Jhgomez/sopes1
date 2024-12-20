@@ -301,9 +301,9 @@ Commands to manage processes in GNU/Linux due to kernel's monolithic nature:
 
 There is three concepts we need to know when talking about processes:
 
-* Process: Is a program in execution
-* Task: Is creation of the process resources
-* Thread: Is the unit of a process execution
+* Process: Is a program in execution. It has Heap, Stack, Data, Text, etc
+* Task: Is creation of the process resources, the process in memory
+* Thread: Is the unit of a process execution. Process resources are divided between threads, each one has its own part or the Heap, Stack, Data, Text, etc. So this means they are a segmentation of the process within itself to perform actions parallelly
 
 When a process is finalized the process structure should be removed from memory, but sometimes this could fail for some reason and it is called "zombie process", is dead in memory but alive in stack
 
@@ -878,7 +878,7 @@ Is an object that makes a deployment, so we can just send parameters to the oper
 
 # Class 13 (12/18/24)
 ## Services
-To this commands we can add `-o yaml --dry-run` to get the yaml printed on CLI. Kubernetes can talk to another service but you have to move firewall and create rules to be able to do it. When you set up a service it generates the "yaml" serice yaml file and again the labels will match labels in deploy and/or files
+To this commands we can add `-o yaml --dry-run` to get the yaml printed on CLI. Kubernetes can talk to another service but you have to move firewall and create rules to be able to do it. When you set up a service it generates the "yaml" serice yaml file and again the labels will match labels in deploy and/or files.
 
 * `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=ClusterIP`
 * `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=NodePort`
@@ -1099,7 +1099,167 @@ status
 * `kubectl run terminal --image=busybox --restart=Never --rm -it -n <namespace_name> -- sh`
 * `kubectl run -it curl --rm --image=alpine/curl \ --restart=Never -- curl http://<>`: the last parameter is a command that will run on the command line of the container
 
+# Class 14 
 
+## Helm
+Helps us install packages, we can think of it as the Ubuntu's "apt" but in Kubernetes, we can used existing packags or we can build custom ones. 
+
+### Install Helm
+* curl -fsS -o get_helm.sh
+https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+* chmod 700 get_helm.sh
+* ./get_helm.sh
+* helm repo add bitnami https://charts.bitnami.com/bitnami
+
+Taken from [official docu](https://helm.sh/docs/intro/install)
+
+## Helm + Nginx Ingress
+We're  going to use an ingress controller to be able to use domain name. Ingress controller helps us set up a load balancer and assign it a domain name. This load balancer is shared because load balancers only allows traffic through prot 80 and 443, only http and https traffic. Controller would by some sort of driver and Ingress uses this driver like component
+
+## Commands to install Ingress Controller
+* `kubectl create ns nginx-ingress`: create a namespace
+* `helm repo add ingress-nginx https://kubernetes.github.io/ingres-nginx`: similar to adding a source in apt
+* `helm repo update`
+* `helm install nginx-ingress ingress-nginx/ingress-nginx -n nginx-ingress`/`helm install <give_installation_a_name> <repo>/<file> -n <middle_component_installs_with_intallation_name_in_the_specified_name>`
+* `helm list -n nginx`
+* `helm uninstall nginx-ingress -n nginx-ingress`
+* `kubectl get services -n nginx-ingress`
+
+[source](https://kubernetes.github.io/ingress-nginx/deploy/#using-helm)
+
+## Example
+We are going to add an endpoint/output to the service in the nginx-oci example that we have been working on. To do that we need to create an ingress definition. A lot of times when using an ingress controller we need to also do DNS configurations. An ingress controller is also similar to a gateway, here we are installing the nginx ingress controller, there are other companies that provide you with this component
+
+* After we install ingress an example will be printed on the CLI, you can copy that to edit it
+* Edit the yaml file of the deployment, `nginx-oci.yaml` and add the following at the bottom
+
+```yaml
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # ingress-nginx-oci
+  name: mywebserver
+  namespace: foo
+spec:
+  ingressClassName: nginx
+  rules:
+      # the "nip.io" lets you get a 'free' domain, like a simulation of DNS
+    - host: 35.239.90.79.nip.io
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: nginx-oci
+                port:
+                  number: 80
+            path: /
+```
+
+we have modified it little, result is:
+
+----
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # no namespace, it uses the default, this has to match the label in deployment 
+  name: ingress-nginx-oci
+spec:
+  ingressClassName: nginx
+  rules:
+      # the "nip.io" lets you get a 'free' domain, like a simulation of DNS
+    - host: 35.239.90.79.nip.io
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: nginx-oci
+                port:
+                  number: 80
+            path: /
+```
+
+* This ingress controller creates a load balancer service, get the ip from it with `kubectl get svc -n nginx-ingress`
+* Copy the IP in the `host` tag.
+* Our example is in the default namespace so remove the `metadata:namespace` child tag and change the name in the same section `metadata:name: ingress-nginx-oci`
+* apply the changes to the deployment run `kubectl apply -f nginx-oci.yaml` which is the 'main' deployment, this will create the controller
+* If you would have a web domain you would just create the DNS registry pointing to the IP address you just copied, if not, this IP address is the url to access the API
+* you can access the service now, you can use curl or a browser
+
+Using linkerd we can alternate between deployment versions
+
+Monitor logs using the following commands:
+* `kubectl get pods`: copy the main pode name, it should be the first, that should be the first deployment
+*  `kubectl logs deploy/nginx-oci -f <pod_name>
+
+## Parallel Algorithms
+Are a sequence of instructions that makes calculations, processes data, that are executed in different/several devices to finally combine/unite all the results in a consolidated correct result
+
+### Parallelism Models
+They try to define a way to structure mapping and data processing
+
+#### Data Parallel
+Each data entry has its own process and its own output
+
+### Task Graph
+Data entries reach a group of process nodes they all together work to then generate an output
+
+### Pipeline
+Data entries followed by a process, followed by a buffer, followd by a process, followed y a buffer which then sends output. Is sequential
+
+### Master Slave
+Databases use this configuration a lot, is a modification of variation of the Workpool model, workers in MS are the processes in the pool in Workpool, the master is a process that communicates with slaves which are the processes that do the processing
+
+### Workpool
+Some units will be ready to process/transform data, those not doing any processes will be idle, appache web server uses this model. You can access a DOcker container an search in the configurations files you can do `cat conf/extra/htttpd-mpm.conf` and see the "prefork MPM" and other sections
+
+## IPC(Inter Process Communication)
+This is how processes communicate in Linux, Windows and MacOs have different implementations or approaches
+
+There are different communication mechanisms, we can see these mechanisms usually in languages like Java and C. The following are local mechanisms, running in the same OS, they share memory(RAM) and CPU clock
+
+### Shared Memory
+By default the system doesn't let processes talk each other but there is a space in memory where this is possible
+
+### Message Queues
+Processes have an ID and the store info to a 'mail box' using an id, once the message is received the message is deleted, it is lost
+
+### Traffic Lights
+If red(1) it can't pass if green(0) it can pass they are binary traffic lights, there is also traffic lights called "counters traffic lights" because they have different states for example: 1, 2, 3
+
+## Critical Region
+When a process is accessing resources it is trying to access this function called "critical region", this "critical region" helps implementing an resource access mechanism. It has a "begin" and "end" and in between it has a function call function that access the resources called "critical section"
+Over a network, a very famous communication mechanism is "Sockets"
+
+We saw some of this concepts in class 10 like: interbloqueo(deadlock), threads, etc
+
+## Thread Models
+
+### One to many
+Many threads inside a program or programs accessing a kernel's process like resources
+
+### One to One
+n number of well defined kernel processes will accept request from any number of thread in a program/programs
+
+### Many to Many
+Necessary kernel threads are created on demand
+
+## Redis(Message Queue) example
+Redis is a key/value database
+
+* run redis on you computer with docker `docker run -it -d redis`
+* enter the redis container CLI `docker exec -it <container_id> /bin/bash`
+* We can run commands now like `set a 1`, remember is a key value so "a" is set to 1
+* `get a`
+* we can use HashTables to store values
+* `set studend1 juan`, `set studend2 pedro`, `set studend:1 juan`
+`set studend:1 juan`, `keys student:*`(gets all students but not the values, it shows the object name and the key), `set contador 1`, `INCR contador`(increments the variable), `keys *`, set an auto-expire key `EXPIRE contador 20`, see more commands in the official documentation. It is very common to use this as for caching info or info that is very volatile. Hashs tables alook like `HSET myhash field1 "juan"` or `HSET student-2 name "lucas"`, `HGETALL student-1`, `HGETALL student-1 name`
+* I can use the redis cli, once inside containers cli run `redis-cli`, try a `PUBLISH sopes1 hola`
+* It can store bytes
+
+Valkey is a Redis fork
 
 Kubernetes Commands
 * `kubectl apply -f deploy.yaml`: Deploys a cluster
@@ -1108,7 +1268,7 @@ Kubernetes Commands
 * `kubectl rollout undo deployment/<deploy_name> --to-revision=<revision_number>`: sets your deployment to the configuration in that version
 * `kubectl get pods`: shows replicas(pods), use `-A` to see all pods from all namesapces
 * `kubectl get deploy`: shows deploys and its replicas info
-* `kubectl scale deploy/<deploy_name> --replicas=5
+* `kubectl scale deploy/<depsloy_name> --replicas=5
 * `kubectl get rs`: shows replica set
 * `kubectl delete -f .`: deletes all objects
 * `kubectl get all -n minamespace`: shows all objects
@@ -1117,3 +1277,5 @@ Kubernetes Commands
 * `kubectl get nodes`: 
 * `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
 * `kubectl get all <-n <namespace_name>>(this is optional)`: returns all objects in a optionally specified namespace if not it could be the default or global namespace objects that will be returned
+* `kubectl get nodes`: returns kuberentes nodes names
+* `kubectl get nodes -o wide`: returns kuberentes nodes info like IP
