@@ -381,6 +381,15 @@ It is possible through google's cloud service called GKE. Is under the "Kubernet
 
 Kubernetes was called "Borg" and it was a Google's project and now is open source
 
+## Cluster Nodes
+* Master Node, this node has to have Kubernetes installed: etcd(db thats stores the cluster configs), kube-api(is the api), kube-controller manager(creates some component on cloud is like a balancer for Kubernetes), kube-scheduler(in charge to manage which container runs in which VM), kubectl(in charge to interpret commands in command line), kubelet, core-dns, network-driver
+
+* Worker Nodes: kubelet, kube, kube-proxy. Kube and kube-proxy has a runtime which is based on OCI they talk to the API in master
+
+* Client: kubectl
+
+`container clusters create k8s-demo --num-nodes=1 --tags=allin,allout --machine type=n1-standard-1 --no-enable-network-policy`: creates a cluster in gcloud this is posible with the Google's SDK if you're logged in to your account
+
 ## Create a Cluster
 It will contain an Nginx POD, Nginx is a web server, load balancer, etc. Be aware that the port-forward command is similar to a load balancer but it jus
 
@@ -410,12 +419,13 @@ It will contain an Nginx POD, Nginx is a web server, load balancer, etc. Be awar
 
 Just to test the default clusterIP service just do step 1 to 3 and then run this other image which is available in Docker Hub and is called "alpine/curl". So this pod will have an instance of this image
 
-1. `kubectl run -it curl --rm --image=alpine/curl \ --curl http://mipod-svc --restart=Never -- curl http://mipod-svc`: the `--` at the end indicates a command we can execute we could access the pod using `/bin/[bash/sh]` but since we have the curl program in this image we will run it using the mipod alias to connect to the other pod, just like in docker when we connect to another container inside the same docker network, either the default or a custom one, we can use the container name to connect to it without using its IP address specifically.
+1. `kubectl run -it curl --rm --image=alpine/curl \ --curl http://mipod-svc --restart=Never -- curl http://mipod-svc`: the `--` at the end indicates a command we can execute we could access the pod using `/bin/[bash/sh]` but since we have the curl program in this image we will run it using the mipod 3alias to connect to the other pod, just like in docker when we connect to another container inside the same docker network, either the default or a custom one, we can use the container name to connect to it without using its IP address specifically.
 2. `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
 
 Try it, on your browser enter http://127.0.0.1:8080 . Like in Docker you have to declare an entry point in some cases in this image the Nginx server already has the entry point defined and that entry point will start the server.
 
 # Kubernetes Objects
+## POD
 A POD is like a container but it can have several containers inside. It is the smallest 'unit', to update a pod you have to delete it and build it again but if you use a deployment component, which contains pods by using another component, that lives inside the deployment, this replica set will be in charge to create the pods, you will be able to . Pods have one or more containers inside.
 
 PODs memory is not persistent and that is why we need use a component called "persistent volume claim" which is actually like a disk partition from something called "persistent volume" which is like the main hard drive, it uses the storage drivers called "storage class"
@@ -490,7 +500,6 @@ metadata:
 spec: {}
 status: {}
 ```
-
 ### Namespace Commands
 * `kubectl create namespace <name>`: the default namespace is called "default", if we don't create one this one is created along with other two, "kube-public", everything here can be accessed from any namespace and "kube-system", this one is specific to the cluster's components
 * `kubectl get ns`: 
@@ -500,23 +509,27 @@ status: {}
 * `kubectl get pods -n <namespace_name>`: gets pods in the specified namespace
 * remember we can add the `-o yaml` and/or `--dry-run` to produce a yaml file and/or spinning up a namespace without actually creating one
 
-## Cluster Nodes
-* Master Node, this node has to have Kubernetes installed: etcd(db thats stores the cluster configs), kube-api(is the api), kube-controller manager(creates some component on cloud is like a balancer for Kubernetes), kube-scheduler(in charge to manage which container runs in which VM), kubectl(in charge to interpret commands in command line), kubelet, core-dns, network-driver
+# Class 12(17/12/24)
 
-* Worker Nodes: kubelet, kube, kube-proxy. Kube and kube-proxy has a runtime which is based on OCI they talk to the API in master
+# Kubernetes Objects
 
-* Client: kubectl
+## Deployments
+They helps us escalate our projects using replicas like we can see in the Kubernetes architecture image, these replicas can create other PODs instances to escalate the app to be high available and also can make roll backs
 
-`container clusters create k8s-demo --num-nodes=1 --tags=allin,allout --machine type=n1-standard-1 --no-enable-network-policy`: creates a cluster in gcloud this is posible with the Google's SDK if you're logged in to your account
+### Deployments Commands
+* `kubectl create deployment <deployment_name(usually an app name)> --replicas=<number> --image=<image_name>`
+* `kubectl get deployments` or `kubectl get deployments <deploy_name> -o yaml`: the later will print the yaml file of the specified deploy
+* `kubectl describe deployment <deploy_name>`
+* `kubectl edit deployment <deploy_name>`
+* `kubectl delete deployment <deploy_name>`
+* `kubectl scale --replicas=<number> deployment/<deploy_name>`
+* `kubectl apply -f <name>.yaml`: forces creation of the deployment described in the YAML file
+* Again remember we can use the `-o yaml > <name>.yaml` and/or `--dry-run`
 
-# Class 12
+### Using Rollouts Rollback Example
+Search "Deployment Rollout in Kubernetes" on the internet. The Kubernetes rollout annotation description is done with `Kubernetes.io/change-cause` tag under `annotations` tag under `metadata` tag. Kubernetes roll outs are a very powerful feature, we can change versions and even contianers very easily
 
-## Something with K8
-
-
-Search "Deployment Rollout in Kubernetes" on the internet. The Kubernetes rollout annotation description is done with `Kubernetes.io/change-cause
-
-this is a deployment file: 
+this is a deployment file, look the change-cause tag: 
 
 ```yaml
 apiVersion: apps/v1
@@ -549,13 +562,15 @@ spec:
 status:  {}
 ```
 
+we could change the containers image version just for example in this case from `nginx:1.26.2` to `nginx:1.27.8`, then run `kubectl deploy -f <deployYAMLfileName>.yaml` if already an object was created previously with a `kubectl create` command, and then we again do another upgrade of the version and leave a `change-cause` and Kubernetes will keep track of these tags and the configurations, we can see them with `kubectl rollout history deploy <deploy_name>` and move to an specific rollout using `kubectl rollout undo deployment/<deploy_name> --to-revision=<revision_number>`, print yaml `kubectl get deployments <name> -o yaml` or the history command again to see the versions change
+
 `httpd` is apache web server in docker hub
 
-## Kubernetes Deployments
-We can have more than one ".yaml" file in a folder. When K8 creates a deployment it create a replica set that controls the pods replicas quantity. The name of the pods have a part of the name of the replica set plus something added to it
+We can have more than one ".yaml" file in a folder. When K8 creates a deployment it create a replica set that controls the pods replicas quantity. The name of the pods have a part of the name of the replica set plus something added to it, we will see this if calling the `kubectl get pods` commands, the pods created by the replica set will have that naming conventions
 
+### Deployments Commands 
 `kubectl scale --replicas=<quantity> --image=<image_name>`
-`kubectl scale --replicas=<quantity> --deployment/<deploy_name>`
+`kubectl scale --replicas=<quantity> <deployment|deploy(shorthand)>/<deploy_name>`
 `kubectl get deployments`
 `kubectl describe deployment <deploy_name>`
 `kubectl edit deployments <deploy_name>`
@@ -612,44 +627,320 @@ Build it with `kubectl apply -f app1.yaml`
 ## Troubleshooting pods
 Be aware Kubernetes creates a default namespace, when the cluster is created in the default namespace this argument can be removed
 
-* `kubectl run -it client --rm --image=busybox \ --restart=Never -n minamespace -- sh`: creates a temporary small POD which can help debug, busybox is small build. It is removed on exit due to `-rm` flag
+* `kubectl run -it client --rm --image=busybox \ --restart=Never -n <namespace_name> -- sh`: creates a temporary small POD which can help debug, busybox is small build. It is removed on exit due to `-rm` flag
 * `kubecl run -it curl --rm--image=alpine/curl \ --restart=Never --curl http://<a sevice address, it can be a pod ip address, a hostname, inclue por or not>`: if you connect to a POD within your network for example apache web serer you will get some response
-* `kubectl exec -it <pod_name> -n minamespace -- [bash|sh]`: helps access inside pod CLI
-* `kubectl exec -it <pod_name> -c minamespace -- [bash|sh]`: helps access inside pod CLI
-* `kubectl describe pods <pod_name> -n mynamespace`: gives info about the pod
+* `kubectl exec -it <pod_name> -n <namespace_name> -- [bash|sh]`: helps access inside pod CLI
+* `kubectl exec -it <pod_name> -c <namespace_name> -- [bash|sh]`: helps access inside pod CLI
+* `kubectl describe pods <pod_name> -n <namespace_name>`: gives info about the pod
 
 ## Services
-To this commands we can add `-o yaml --dry-run` to get the yaml printed on CLI. Kubernetes can talk to another service but you have to move firewall and create rules to be able to do it. When you set up a service it generates the "yaml" serice yaml file and again the labels will match labels in deploy and/od files
+To this commands we can add `-o yaml --dry-run` to get the yaml printed on CLI. Kubernetes can talk to another service but you have to move firewall and create rules to be able to do it. When you set up a service it generates the "yaml" serice yaml file and again the labels will match labels in deploy and/or files
 
 * `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=ClusterIP`
 * `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=NodePort`
 * `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=LoadBalancer`
-* `kubectl get serices <my_service_name> -o yaml > <name>.yaml` and `kubectl apply -f servic.yaml`: helps edit a service file
+* `kubectl get services <my_service_name> -o yaml > <name>.yaml` and `kubectl apply -f servic.yaml`: helps edit a service file
 * `kubectl expose deployment <label_name> --port=80 --target-port=80 --type=LoadBalancer`: Sets up a load balancer
 
 examples:
-* `kubectl expose deploy/nginx --port=80 --type=LoadBalancer --dry-run -o yaml >> deploy.yaml`
+* `kubectl expose deploy/nginx --port=80 --type=LoadBalancer --dry-run -o yaml >> deploy.yaml`: this puts the configurations of a service that 'controls access to a deployment which inside contains a pod that the deployment could manage using a replica set, and appends all these configurations to an existing file called "deploy.yaml"
 
+### NodePort example
+```yaml
+apiVersion: apps/v1
+kind: Service
+metadata:
+  labels
+    run: mipod
+  name: mipod-svc
+spec:
+  ports:
+  - port: 5000
+    protocol: TCP
+    targetPort: 5000
+    nodePort: 31111
+  selector:
+    run: mipod
+  type: NodePort
+```
 
-** Kubernetes Operators
-Is an object that makes a deployment, so we can just send parameters to the operator and the operator makes the deployment. "Helm" is a software that help us create these K8 operators, Helm makes installing packages very easily
+### Load Balancer Example
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels
+    run: mipod
+  name: mipod-svc
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    run: mipod
+  type: LoadBalancer
+```
 
-## Kubernetes Roll Outs
+build services with `kubectl apply -f <name>.yaml`
 
-Kubernetes roll outs are a very powerful feature, we can change versions and even contianers very easily 
+### Note
+Oras is a tool that helps us create artifacts using the OCI protocol which is the same protocol used to create container. Using it we could wrap an LLM inside and OCI artifact so we could have a container download this artifact which would be an alternative of using a CDN, we could wrap a web server, basically anything. For example we could set a website to download the OCI artifact on start
+
+### Wrapping a Web Server(Nginx) inside an OCI and deploy it using a Kubernetes Deployment Object
+We used a deployment object because we need to restart the POD
+
+* `kubectl create deployment nginx-oci --image=nginx --dry-run -o yaml > nginx-oci.yaml`: creates the deployment object and generates yaml file. If you see inside the yaml file you will see it contains replica set which contains a container that is using an "nginx" image, this is the first container. We need to set up an init container, you can go to Kubernetes docs to see how to create one. Bascially it is a tag with three child tags that will be declared inside the yaml file we just generated and that has to be declared at the same level as the first container
+
+nginx-oci.yaml
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp:null
+  labels:
+    app: nginx-oci
+  name: nginx-oci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-oci
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-oci
+    spec:
+      initContainers:
+      - name: init-index-page
+        image: busybox:1.28
+        command: ['sh', '-c', "echo 'hola'> /var/www/html/index.html"]
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+status: {}
+```
+
+The init container will run the command that replaces the original nginx index.html file, again, the greater than sign is . They have access to the same memory disk space so we can edit this file.
+
+* `kubectl describe pods nginx-oci`
+* `kubeclt apply -f nginx-oci.yaml`: creates the deployment
+* `kubectl port-forward deploy/nginx-oci 1234:80`: this command gave error "cant forward port because pod is not running", go next step
+* `kubectl get pods`: use it to debug, we get the name of the pod
+* `kubectl describe pods <name_of_pod>`: good start it gives us event info and some status but not enough info so is a good start
+* `kubectl logs pod/nginx-asfai8wef-asdfa(this is how the name would look like)`: log said "default container ""nginx" is waiting to start: podInitializing"
+* this time add the default container name to the command `kubectl logs pod/nginx-asfai8wef-asdfa nginx`: gives us same info
+* Looking back to info in the `describe` command we see that the container called "init-index-page" is also inside, we know this also by the script, so include it in the command `kubectl logs pod/nginx-adkfall-k9asj init-index-page`: now we got more useful info "sh: can't create /var/www/html/index.html: non existing directory", this is because we though the volume(hard digital disk) was being created and shared by default but is not the case, so go to documentation and search "persistent volume" enter the documentation you should find some script with a volumes tag that contains name, hostpath which contains path, iniside it. we will see how we add it below
+
+By adding the shared volume both containers/pods in this deployment object will have access to the same file system
+
+nginx-oci.yaml
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp:null
+  labels:
+    app: nginx-oci
+  name: nginx-oci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-oci
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-oci
+    spec:
+      volumes:
+      - name: vol
+        hostPath:
+          path: /test
+      initContainers:
+      - name: init-index-page
+        image: busybox:1.28
+        command: ['sh', '-c', "echo 'hola'> /var/www/html/index.html"]
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+status: {}
+```
+
+now force the creation of the object, but first 
+
+* delete it `kubectl delete -f nginx-oci.yaml`, 
+* create it `kubectl apply -f nginx-oci.yaml`, the folder "/test" will be created inside the host, 
+* check logs again `kubectl logs pod/nginx-oci-aksdfjka-asdfa nginx`: error again
+* check logs again `kubectl logs pod/nginx-oci-aksdfjka-asdfa init-index-page`: same error again
+* go back to documentation and find under "persisten volumes" docu, we're going to mount the volume, find the `volumeMounts` tag copy the children tags the yaml file looks like following
+
+nginx-oci.yaml
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp:null
+  labels:
+    app: nginx-oci
+  name: nginx-oci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-oci
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-oci
+    spec:
+      volumes:
+      - name: vol
+        hostPath:
+          path: /test
+      initContainers:
+      - name: init-index-page
+        image: busybox:1.28
+        command: ['sh', '-c', "echo 'hola'> /var/www/html/index.html"]
+        volumeMounts:
+        - name: vol
+          mountPath: /var/www/html
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+status: {}
+```
+
+This means the volume exists inside the server(I think it means the local host that is hosting the two containers) will create a "/test" folder in the local host, and inside the container inside the local host we are going mount it in the container with the `mountPath` indicated and then the command will create the file and then the file will be mounted to the nginx container. but after deleting the deployment to built it again, still not working, the error this time is best described in the info printed with the `describe` command, it says "failed to generate spec: fiale to mkdir "/test": read-only file system". this means in gcp for security we can not create a directory but we can try with an already created directory like "/tmp". This will work but in case it wouldn't had worked we would need to use a GCP data volume, delet it and apply, it will work
+
+* `kubectl get pods`: shows the pods are running
+* Now that it is working we are going to move the mount the volume with the same path in the nginx container, we will see if this is the right way in next step
+* `kubectl get pods`: copy pod name
+* Lets get in the pod `kubectl exec -it nginx-oci-la343k4-4m54m -- bash`, move to the folder we created `cd /var/www/html`, do `ls`, do `cat index.html`, it print the text we wanted, do `exit`
+* expose the deployment with a port-forward `kubectl port-forward deploy/nginx-oci 6001:80`
+* from another CLI do `curl http://127.0.0.1:6001`, it works but it doesn't give us the value we wanted
+* Lets find out where the default page is actually pulled from, do `cd /etc`, `ls`, there is an nginx directory, `cd nginx`, `ls` see there are some "conf" and "conf.d" file, look into them with `cat`, `cat conf` doesn't has it, do `cd conf.d`, `ls`, print `cat default.conf` and there it says the root is "/usr/share/nginx/html;" so change that in the deploy yaml script
+* delete the object `kubeclt delete -f nginx-oci.yaml`
+* build it again `kubectl apply -f nginx-oci.yaml`
+* expose it `kubectl port-forward deploy/nginx-oci 6001:80`
+* test it `curl htttp://127.0.0.1:6001`
+
+The yaml file looks like this now, only the spec section:
+
+```yaml
+spec:
+      volumes:
+      - name: vol
+        hostPath:
+          path: /test
+      initContainers:
+      - name: init-index-page
+        image: busybox:1.28
+        command: ['sh', '-c', "echo 'hola'> /usr/share/nginx/html/index.html"]
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+        resources: {}
+
+```
+
+Now, using harbor(this was set up in class6), we are going to make the init contatiner(the busybox container) download the index file from this private registry created with harbor, it could have been an LLM
+
+* first we need to create the OCI using "Oras", look at get started docu, how to guides, "pushing and pulling", basically log in to oras, `oras login -u admin -p Harbor23 <host_name>`, do the push you might do a `oras push --help`
+* now instead of using busybox we are going to use a container that has oras, go to docker hub, in our example "bitname/oras" image was used
+* from the container docu we see a similar command to the following would have to be ran `docker run --name oras bitnami/oras bitnami/oras:latest oras pull <oras_host_name>`
+* Using the `--help` flag we came to this docker command, docker should be running in the background, `docker run -it --rm --name oras bitamani/oras:latest pull <oras_host_name>/<oras_project_name/<oras_archetype_name>:<version>`, you might get permission denied, but this is some other problem, you have the right command now
+* Doing a `pull --help` we see that when doing a pull using oras we can also specify an out put directoy with `-o <path>` flag
+* We need to modify our deployment to use this container and run the oras command 
+
+```yaml
+spec:
+      volumes:
+      - name: vol
+        hostPath:
+          path: /test
+      initContainers:
+      - name: init-index-page
+        image: bitnami/oras:latest
+        command: ['docker run -it --rm --name oras bitamani/oras:latest pull <oras_host_name>/<oras_project_name/<oras_archetype_name>:<version> -o /usr/share/nginx/html']
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+        resources: {}
+```
+
+The command in the oras init container is downloading an artifact that contains a text file
+
+* build object `kubectl apply -f nginx-oci.yaml`
+* `kubectl get pods`: the pod was created but it is not running, copy pod name
+* `kubectl describe pod/<pod_name>`: no info is give
+* `kubectl get pods <pod_name>`: error says "no such file or directory: unknown", lets try adding the file name also
+
+```yaml
+spec:
+      volumes:
+      - name: vol
+        hostPath:
+          path: /test
+      initContainers:
+      - name: init-index-page
+        image: bitnami/oras:latest
+        command: ['docker run -it --rm --name oras bitamani/oras:latest pull <oras_host_name>/<oras_project_name/<oras_archetype_name>:<version> -o /usr/share/nginx/html/index.html']
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+        resources: {}
+```
+
+* `kubectl delete -f nginx-oci.yaml`
+* `kubectl apply -f nginx-oci.yaml`
+* `kubectl get pods`: copy pod name
+* `kubectl describe pods <pod_name>`: the folder doesn't exists, the example was not finished in this class but the possible problem is that the container doesn't have any directories and some privileges may be needed to create the directory and file
+
+## Kubernetes Operators
+Is an object that makes a deployment, so we can just send parameters to the operator and the operator makes the deployment. "Operator Framework" and "Helm" are software that help us create these K8 operators, Helm makes installing packages very easily
+
+ 
 
 Kubernetes Commands
 * `kubectl apply -f deploy.yaml`: Deploys a cluster
 * `kubectl rollout history deploy <deploy_label>`: prints rollout history
 * `kubectl get deploy <deploy_label> -o yml`: displays the yml confingurations on CLI
 * `kubectl rollout undo deployment/<deploy_name> --to-revision=<revision_number>`: sets your deployment to the configuration in that version
-* `kubectl get pods`: shows replicas(pods), use `-A`
+* `kubectl get pods`: shows replicas(pods), use `-A` to see all pods from all namesapces
 * `kubectl get deploy`: shows deploys and its replicas info
 * `kubectl scale deploy/<deploy_name> --replicas=5
 * `kubectl get rs`: shows replica set
-* `kubectl delete -f .`: deletes
-* `kubectl get all -n minamespace`
-* `kubectl delete pods <deploy_name> -n minamespace` 
+* `kubectl delete -f .`: deletes all objects
+* `kubectl get all -n minamespace`: shows all objects
+* `kubectl delete pods <pod_name> -n minamespace`: Deletes pods from the POD name in the namespace specified
 * `kubectl get pods -o wide`: Kubernetes ip, this shows the pods info including their IP
 * `kubectl get nodes`: 
 * `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
