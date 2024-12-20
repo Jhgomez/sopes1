@@ -435,11 +435,11 @@ PODs memory is not persistent and that is why we need use a component called "pe
 * `kubectl get <object_name_in_plural> <object>`
 * `kubectl delete <object_name_in_plural> <object>`
 * `kubectl describe <object_name_in_plural> <object>`
-* `KUBE_EDITOR=nano kuebctl edit <object_name_in_plural> <object>`
+* `KUBE_EDITOR=nano kuebctl edit <object_name_in_plural> <object>`: changes the text editor Kubernetes use by default which VIm
 * `kubectl get <object_name_in_plural> <object> -o yaml > <object>.yaml`: produces a yaml with the script to produce it
 * `kubectl create -f <object>.yaml`
 * `kubectl delete -f <object>.yaml`
-* `kubectl apply -f <object>.yaml`
+* `kubectl apply -f <object>.yaml`: This updates the Kubernetes object declared in the yaml ile, be aware that if you changed a yaml file that contains some POD and it has changed you first have to delete it, and if you are running it for a deployment or a service you might not need to delete it at least this is true for the deployment objects
 
 You can run this commands but you also have the option of using scripts in yaml files
 
@@ -514,7 +514,7 @@ status: {}
 # Kubernetes Objects
 
 ## Deployments
-They helps us escalate our projects using replicas like we can see in the Kubernetes architecture image, these replicas can create other PODs instances to escalate the app to be high available and also can make roll backs
+They helps us escalate our projects using replicas like we can see in the Kubernetes architecture image, these replicas can create other PODs instances to escalate the app to be high available and also can make roll backs.
 
 ### Deployments Commands
 * `kubectl create deployment <deployment_name(usually an app name)> --replicas=<number> --image=<image_name>`
@@ -527,7 +527,7 @@ They helps us escalate our projects using replicas like we can see in the Kubern
 * Again remember we can use the `-o yaml > <name>.yaml` and/or `--dry-run`
 
 ### Using Rollouts Rollback Example
-Search "Deployment Rollout in Kubernetes" on the internet. The Kubernetes rollout annotation description is done with `Kubernetes.io/change-cause` tag under `annotations` tag under `metadata` tag. Kubernetes roll outs are a very powerful feature, we can change versions and even contianers very easily
+Search "Deployment Rollout in Kubernetes" on the internet. The Kubernetes rollout annotation description is done with `Kubernetes.io/change-cause` tag under `annotations` tag under `metadata` tag. Kubernetes roll outs are a very powerful feature, we can change versions and even contianers very easily. It is very common to put the hash of a commit here, this file is basically what you need when doing CI/CD
 
 this is a deployment file, look the change-cause tag: 
 
@@ -624,7 +624,7 @@ the spec inside spec section has to be the same as in our pod file, this way Kub
 
 Build it with `kubectl apply -f app1.yaml`
 
-## Troubleshooting pods
+## Troubleshooting pods commands
 Be aware Kubernetes creates a default namespace, when the cluster is created in the default namespace this argument can be removed
 
 * `kubectl run -it client --rm --image=busybox \ --restart=Never -n <namespace_name> -- sh`: creates a temporary small POD which can help debug, busybox is small build. It is removed on exit due to `-rm` flag
@@ -633,61 +633,10 @@ Be aware Kubernetes creates a default namespace, when the cluster is created in 
 * `kubectl exec -it <pod_name> -c <namespace_name> -- [bash|sh]`: helps access inside pod CLI
 * `kubectl describe pods <pod_name> -n <namespace_name>`: gives info about the pod
 
-## Services
-To this commands we can add `-o yaml --dry-run` to get the yaml printed on CLI. Kubernetes can talk to another service but you have to move firewall and create rules to be able to do it. When you set up a service it generates the "yaml" serice yaml file and again the labels will match labels in deploy and/or files
-
-* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=ClusterIP`
-* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=NodePort`
-* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=LoadBalancer`
-* `kubectl get services <my_service_name> -o yaml > <name>.yaml` and `kubectl apply -f servic.yaml`: helps edit a service file
-* `kubectl expose deployment <label_name> --port=80 --target-port=80 --type=LoadBalancer`: Sets up a load balancer
-
-examples:
-* `kubectl expose deploy/nginx --port=80 --type=LoadBalancer --dry-run -o yaml >> deploy.yaml`: this puts the configurations of a service that 'controls access to a deployment which inside contains a pod that the deployment could manage using a replica set, and appends all these configurations to an existing file called "deploy.yaml"
-
-### NodePort example
-```yaml
-apiVersion: apps/v1
-kind: Service
-metadata:
-  labels
-    run: mipod
-  name: mipod-svc
-spec:
-  ports:
-  - port: 5000
-    protocol: TCP
-    targetPort: 5000
-    nodePort: 31111
-  selector:
-    run: mipod
-  type: NodePort
-```
-
-### Load Balancer Example
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  labels
-    run: mipod
-  name: mipod-svc
-spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 5000
-  selector:
-    run: mipod
-  type: LoadBalancer
-```
-
-build services with `kubectl apply -f <name>.yaml`
-
 ### Note
 Oras is a tool that helps us create artifacts using the OCI protocol which is the same protocol used to create container. Using it we could wrap an LLM inside and OCI artifact so we could have a container download this artifact which would be an alternative of using a CDN, we could wrap a web server, basically anything. For example we could set a website to download the OCI artifact on start
 
-### Wrapping a Web Server(Nginx) inside an OCI and deploy it using a Kubernetes Deployment Object
+### Wrapping a Web Server(Nginx) inside an OCI and deploy it using a Kubernetes Deployment Object Example
 We used a deployment object because we need to restart the POD
 
 * `kubectl create deployment nginx-oci --image=nginx --dry-run -o yaml > nginx-oci.yaml`: creates the deployment object and generates yaml file. If you see inside the yaml file you will see it contains replica set which contains a container that is using an "nginx" image, this is the first container. We need to set up an init container, you can go to Kubernetes docs to see how to create one. Bascially it is a tag with three child tags that will be declared inside the yaml file we just generated and that has to be declared at the same level as the first container
@@ -873,7 +822,7 @@ spec:
       volumes:
       - name: vol
         hostPath:
-          path: /test
+          path: /tmp
       initContainers:
       - name: init-index-page
         image: bitnami/oras:latest
@@ -902,7 +851,7 @@ spec:
       volumes:
       - name: vol
         hostPath:
-          path: /test
+          path: /tmp
       initContainers:
       - name: init-index-page
         image: bitnami/oras:latest
@@ -927,7 +876,230 @@ spec:
 ## Kubernetes Operators
 Is an object that makes a deployment, so we can just send parameters to the operator and the operator makes the deployment. "Operator Framework" and "Helm" are software that help us create these K8 operators, Helm makes installing packages very easily
 
- 
+# Class 13 (12/18/24)
+## Services
+To this commands we can add `-o yaml --dry-run` to get the yaml printed on CLI. Kubernetes can talk to another service but you have to move firewall and create rules to be able to do it. When you set up a service it generates the "yaml" serice yaml file and again the labels will match labels in deploy and/or files
+
+* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=ClusterIP`
+* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=NodePort`
+* `kubectl expose deployment <label_name> --port=<port> --target-port=<port> --type=LoadBalancer`: this load balancer has and static IP
+* `kubectl get services <my_service_name> -o yaml > <name>.yaml` and `kubectl apply -f servic.yaml`: helps edit a service yaml file
+* `kubectl expose deployment <label_name> --port=80 --target-port=80 --type=LoadBalancer`: Sets up a load balancer
+
+examples:
+* `kubectl expose deploy/nginx --port=80 --type=LoadBalancer --dry-run -o yaml >> deploy.yaml`: this puts the configurations of a service that 'controls access to a deployment which inside contains a pod that the deployment could manage using a replica set, and appends all these configurations to an existing file called "deploy.yaml"
+
+### NodePort example
+```yaml
+apiVersion: apps/v1
+kind: Service
+metadata:
+  labels
+    run: mipod
+  name: mipod-svc
+spec:
+  ports:
+  - port: 5000
+    protocol: TCP
+    targetPort: 5000
+    nodePort: 31111
+  selector:
+    run: mipod
+  type: NodePort
+```
+
+### Load Balancer Example
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels
+    run: mipod
+  name: mipod-svc
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    run: mipod
+  type: LoadBalancer
+```
+
+build services with `kubectl apply -f <name>.yaml`
+
+again it has four parts, apdVersion, kind, metadata and spec
+
+## Example continuation
+We are going to continue with the example but be aware that this example has a simpler version of what is actually used in real scenarios which is called a persistent volume, this volumes are actually a service the cloud provider offer its users, is a storage on the cloud, this is just a clarification.
+
+* the Oras archetype which will contain just an html file with a phrase is already pushed to Harbor using the OCI tool Oras that turns the file into an OCI image
+* create the deployment components `kubectl apply -f nginx-oci.yaml`
+* check the pods are created and running `kubectl get pods`
+* do a port forward
+* do a curl to the local host and the port declared in the port forward command
+
+So instead of storing this file in an storage service on the cloud like S3, we are using our private registry
+
+* To be able to download the OCI artifact using an init container the teacher actually created a Docker image with the following configurations, be aware alpine does not have `curl` so here we're installing it:
+
+```Dockerfile
+# the file was base on Oras official documentation on how to install oras
+# https://oras.land/docs/installation
+FROM alpine
+RUN apk add curl
+ENV VERSION="1.2.1"
+RUN curl -LO "https://github.com/oras-project/oras/releases/download/v${VERSION}/oras_${VERSION}_linux_amd64.tar
+RUN mkdir -p oras-intall/
+RUN tar -zxf oras_${VERSION}_*.tar.gz -C oras-intall/
+RUN mv oras-install/oras /usr/local/bin/
+RUN rm -rf oras_${VERSION}_*.tar.gz oras-install/
+```
+
+* build the image `docker build -t <user>/<name/tag>`
+* push image `docker push <user>/<name>`
+* From the prev commands we can see that the deployment file will change, the image will not be the oras image we used in previous class
+
+nginx-oci.yaml
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp:null
+  labels:
+    app: nginx-oci
+  name: nginx-oci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-oci
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-oci
+    spec:
+      volumes:
+      - name: vol
+        hostPath:
+          path: /tmp
+      initContainers:
+      - name: init-index-page
+        image: <user>/<custom_oras_image_name>
+        command: ['sh', '-C', 'oras pull <oras_host_name>/<oras_project_name/<oras_archetype_name>:<version> -o /usr/share/nginx/html']
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+        resources: {}
+status: {}
+```
+
+### Create other deployments versions of the OCI example
+This time we are going to modifiy the index.html file we are going to upload as the artifact. With this we intend to showcase how a blue-green deployment is done. we will also expose the deployment with a service and expose the service with a port-forward. Blue-green deployments are possible thanks to services
+
+* `nano index.html`: inside it add some tag, maybe "v1", and do "v2" as well
+* `oras login -u user -p password <harbor_host_name>`:  logging to ora
+* `oras push <harbor_host_name>/<project_name>/<archetype_name>:<version> index.html`: push the file with the archetype name specified and version to v1 and v2, do both, one at a time so we will have three archetypes
+* make sure the `metadata` children tags `labels:app` and name, the `spec` children tag `selector:matchLabels` and `template:metadata:labels:app` in the deployment yaml file is the correct one, they all have to match and we will change them. Lets do a version one and version two so you'll have to copy them and end up with three deployment yaml files "nginx-oci.yaml", "nginx-oci-v1.yaml" and "nginx-oci-v3.yaml".
+* build all three deployments `kubectl apply -f nginx-oci.yaml f nginx-oci-v1.yaml f nginx-oci-v3.yaml`
+* we can create a service that will expose the main deployment `kubectl expose deployment/nginx-oci --port=80 --target-port=80 --type=ClusterIP --dry-run -o yaml >> nginx-oci.yaml`
+* check pods are running `kubectl get pods`, you should se three pods as well as three deploys `kubectl get deploy`
+* we also create a port-forward now `kubectl port-forward deployment/nginx-oci 6001:80`
+
+Now with all these three deployments we are going to do a "blue-green" deployment
+
+* we can put the port-forward to the nginx service `kubectl port-forward svc/nginx-oci 6001:80`
+* but we have a problem, when we do a curl to local host and port in the port-forward we get the wrong message in, we solve this by adding the `:latest` tag to the nginx image in the deployment yaml file of "nginx-oci.yaml"
+* re run changes `kubectl apply -f nginx-oci.yaml`, check the last pod 	`kubectl get pods` we should see one is terminating but three are running
+* do curl again and the message from the right archetype should be printed
+
+Services not only lets us expose the pods/cluster as a load balancer but also it lets us a blue-green deployment. To do that in the 'main' deployment file, "nginx-oci.yaml". go to the service that exposes it the yaml file and change the `spec:selector:app` child tag, use the labels we specified in our deployments, and then everytime you change them:
+
+* apply changes `kubectl apply -f nginx-oci.yaml`
+* check they are running `kubectl get pods`p
+* do a curl to confirm the correct message is loaded
+* It will be working is not going to have the right behavior and that is because we are sharing the same volume across the different deployment objects we created. To solve this go back to each of the deployment yaml files and change the under under deployment object the children tag `spec:spec:volumes:hostpath:path` put a different path on each deployment, without this the something weird might happen
+* repeat the process, apply, check the pods, and do a curl
+* If you get any errors try deleting the service or the deployment(s), `kubectl delete svc nginx-oci` and build them again, remember you need to do a port-forward to expose the service that is exposing the deployment and lives inside its yaml file. The final yaml file is:
+
+nginx-oci.yaml
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp:null
+  labels:
+    app: nginx-oci
+  name: nginx-oci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-oci
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-oci
+    spec:
+      volumes:
+      - name: vol
+        hostPath:
+          # this path changes in different deployments yamls
+          path: /tmp
+      initContainers:
+      - name: init-index-page
+        image: <user>/<custom_oras_image_name>
+        command: ['sh', '-C', 'oras pull <oras_host_name>/<oras_project_name/<oras_archetype_name>:<version> -o /usr/share/nginx/html']
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels
+    app: nginx-oci
+  name: nginx-oci
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    # this has to match the label of the deployment we want to use
+    app: nginx-oci
+  type: ClusterIP
+status
+  loadBalancer: {}
+```
+
+## Troubleshooting & Monitoring Commands
+* `kubectl logs -f pod/<pod_name>`
+* `kubectl logs -f deployment/<deploy_name>`
+* `kubectl describe deployments <deploy_name>`
+* `kubectl run terminal --image=busybox --restart=Never --rm -it -n <namespace_name> -- sh`
+* `kubectl run -it curl --rm --image=alpine/curl \ --restart=Never -- curl http://<>`: the last parameter is a command that will run on the command line of the container
+
+
 
 Kubernetes Commands
 * `kubectl apply -f deploy.yaml`: Deploys a cluster
