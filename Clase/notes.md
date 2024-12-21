@@ -1261,7 +1261,15 @@ Redis is a key/value database
 
 Valkey is a Redis fork
 
-Kubernetes Commands
+# Class 15(20/12/24)
+
+## Linkerd
+It manipulates a Kubernetes cluster network, it can encrypt cluster's network traffic, deny services based on rules, route services. Is a service mesh, a service mesh purpose is to improve the internal services network. To accomplish these functionality it puts a child container inside the original service or lives next to it, it receives the network traffic instead of the original container and then it decides what to do. This service mesh also lets you measure the system's observability(golden metrics: success rates, latencies, throughput). And it encrypts communication between services in the cluster, basically is a proxy server. It is not required to modify the application to implement Linkerd. We just make like a 'patch' to have the original container to be injected and then the proxy intercept the traffic and decide what to do. Linkerd has a "data plane" and a "control plane", control plane decides what to do with network traffic and data plane is were services are. So proxy receives network traffic, it asks the control plane what to do and then if necessary the traffic is  directed to the service/application/pod/container in the data plane. Linker is a great and easy way to implement mTLS(mutual TLS) in Kubernetes. You can connect clusters as if they were on the same network. Be aware that in order for the service mesh to work all nodes/services will have to implement Linkerd, this will create the proxy object we mentioned before and this proxy will ask the control plane ao all nodes have an instance of a proxy
+
+## Linkerd Commands
+* `linkerd uninstall | kubectl delete -f -`: uninstall linkerd
+
+## Kubernetes Commands
 * `kubectl apply -f deploy.yaml`: Deploys a cluster
 * `kubectl rollout history deploy <deploy_label>`: prints rollout history
 * `kubectl get deploy <deploy_label> -o yml`: displays the yml confingurations on CLI
