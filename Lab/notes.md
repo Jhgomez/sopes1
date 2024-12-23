@@ -398,3 +398,37 @@ Creating a VM with a script, the script was loaded to the class [repo](https://g
 
 # Class 7
 Was a review of the different components of the project architecture, how should be organized and their role. Also we saw how to create a "Instance Template" and "Instance Groups" which is where we can use the elastic feature of the cloud
+
+# Class 11 (23/12/24)
+
+## gRPC(Google Remote Procedure Call)
+Uses Protocol Buffers(Protobuf) as its data serialization language. Protobug is the interface definition language(IDL) that GRPC uses and is faster thatn JSON and XML. It allows to define services and messages in an ".proto" file that is then used to generate the client's and server's code. Its compatible with GO, Python, Java C++, Ruby, Node.js, etc. They can communicate between other gRPC services no matter the language they are implemented in as long as they use the same ".proto" file. It supports authentication(TLS, OAuth2), load balancing, monitoring(Prometheus) and more. Very commonly used in ML and Big Data systems to transmit large data volumes
+
+### It is based on HTTP/2
+Uses HTTP2 characteristics:
+
+* Streams multiplexation: Allows to send multiple requests/responses in a singe connection
+* Headers Compression: Reduces transmitted data size
+* Bidirectional Communication(full-duplex): Both, client and server can send data simultaneously
+
+### Types of Communication
+* Unary RPC: Client makes one request, receives one response(Similar to REST)
+* Server Streaming RPC: Client sends one request, receives a data flow
+* Client Streaming RPC: Client send a data flow, receives one reponse only
+* Bidirectional Streaming RPC: Both, client and server, sends a data flow simultaneously
+
+Its streammng communications makes it ideal for chat, video streaming and IoT applications, etc.
+
+You can expose gRPC services as REST endpoints using tools like gRPC-Gateway
+
+### Limited Browser Compatibility
+Not all browsers support HTTP/2 natively so a additional layer is needed(like gRPC-Web) for it to work on web applications
+
+### Debugging
+Is more difficult compared to JSON debugging since it is more legible to humans
+
+### Additional Tools Dependency
+You have to install and configure tools like "protoc" and gRPC plugins to generate code
+
+## Example
+We created the python code that generates the JSON simulating user inputs and installed Locust using Python which is a framework that simulates client interactions using the JSON we previously generated
