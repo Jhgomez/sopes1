@@ -1264,7 +1264,147 @@ Valkey is a Redis fork
 # Class 15(20/12/24)
 
 ## Linkerd
-It manipulates a Kubernetes cluster network, it can encrypt cluster's network traffic, deny services based on rules, route services. Is a service mesh, a service mesh purpose is to improve the internal services network. To accomplish these functionality it puts a child container inside the original service or lives next to it, it receives the network traffic instead of the original container and then it decides what to do. This service mesh also lets you measure the system's observability(golden metrics: success rates, latencies, throughput). And it encrypts communication between services in the cluster, basically is a proxy server. It is not required to modify the application to implement Linkerd. We just make like a 'patch' to have the original container to be injected and then the proxy intercept the traffic and decide what to do. Linkerd has a "data plane" and a "control plane", control plane decides what to do with network traffic and data plane is were services are. So proxy receives network traffic, it asks the control plane what to do and then if necessary the traffic is  directed to the service/application/pod/container in the data plane. Linker is a great and easy way to implement mTLS(mutual TLS) in Kubernetes. You can connect clusters as if they were on the same network. Be aware that in order for the service mesh to work all nodes/services will have to implement Linkerd, this will create the proxy object we mentioned before and this proxy will ask the control plane ao all nodes have an instance of a proxy
+It manipulates a Kubernetes cluster network, it can encrypt cluster's network traffic, deny services based on rules, route services. Is a service mesh, a service mesh purpose is to improve the internal services network. To accomplish these functionality it puts a child container inside the original service or lives next to it, it receives the network traffic instead of the original container and then it decides what to do. This service mesh also lets you measure the system's observability(golden metrics: success rates, latencies, throughput). And it encrypts communication between services in the cluster, basically is a proxy server. It is not required to modify the application to implement Linkerd. We just make like a 'patch' to have the original container to be injected and then the proxy intercept the traffic and decide what to do. Linkerd has a "data plane" and a "control plane", control plane decides what to do with network traffic and data plane is were services are. So proxy receives network traffic, it asks the control plane what to do and then if necessary the traffic is  directed to the service/application/pod/container in the data plane. Linker is a great and easy way to implement mTLS(mutual TLS) in Kubernetes. You can connect clusters as if they were on the same network. Be aware that in order for the service mesh to work all nodes/services will have to implement Linkerd, this will create the proxy object we mentioned before and this proxy will ask the control plane what to do and all nodes have an instance of a proxy. Be aware you need also to create a 'dummy' pod/container that also has the proxy installed and the proxy of the dummy container talks to the control plane
+
+# Class 16(23/12/24)
+
+## Installing Linkerd in MacOs
+Follow steps in [official documentation](https://linkerd.io/2.17/getting-started/). If you get a similar error to " Cannot find Linkerd: the Linkerd clusterNetworks ["10.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16,fd00::/8"] do not include svc default/kubernetes (34.118.224.1)" below you'll have the fix instructions.
+
+1. Install the CLI: `curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install-edge | sh`
+
+2. Export path either on ".bashrc" or ".zshrc", etc which is the corresponding terminal's file: `export PATH=$HOME/.linkerd2/bin:$PATH`
+
+3. Do precheck: `linkerd check --pre`
+
+4. Check "kubectl" and "cluster" have same version, check the [documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/)
+
+5. Install CRDs: `linkerd install --crds | kubectl apply -f -`
+
+6. Install Linkerd: `linkerd install | kubectl apply -f -`
+
+7. Do check to see if service is up: `linkerd check`
+
+8. (Optional) In case you get a "ClusterNetworks error" mentioned above or similar in the previous step you will be given the missing network so copy it and edit the Kubernetes "config map" called "linkerd-config" and add the missing network in the "clusterNetworks" section: `kubectl edit cm linkerd-config -n linkerd`. Be aware this command opens "vi" editor, so use the "vi" commands to edit text
+
+9. Install dashboard components: `linkerd viz install | kubectl apply -f -`
+
+10. (optional) Do check to see if service is up: `linker check`
+
+11. Initiate Dashboard: `linkerd viz dashboard`
+
+12. You can check Linkerd dashboard by now `locahost:50750`
+
+## Linkerd Example
+We will be using teacher's repo. Our goal is to use the Linkerd official documentation to split traffic 50/50 using a dummy container 
+
+### Build Docker Containers
+They will be pushed to your docker repo
+
+1. Clone Repo `git clone https://github.com/sergioarmgpl/linkerd-workshop.git`
+
+2. `cd linkerd-workshop`
+
+3. `cd app1`
+
+4. `/bin/bash(or sh) build.sh <docker_user>`, this script calls the Dockerfile in this directory also, it is an Apache server. Teacher changed the script because he is using harbor(private registry) instead of a docker hub repo(00:28:00)
+
+5. `cd..`
+
+6. `cd app2`
+
+7. `/bin/bash(or sh) build.sh <docker_user>`, this script calls the Dockerfile in this directory also, it is a http client simulation, it just runs the command `siege -b http://apache`, here it is called apache because we will create a service within the Kubernetes cluster that is called apache and as mentioned in previous notes instead of using the IP address is better to call another service by its name, IP address changes everytime that the cluster is created so it is better to call it by the name. Teacher changed the script because he is using harbor(private registry) instead of a docker hub repo
+
+8. `cd..`
+
+### Create Applications
+Set up docker cluster
+
+1. Create Namespace: `kubectl create namespace linkerd-demo`
+
+2. Create Apache server deployment: `kubectl -n likerd-demo create deployment apache --image=<docker_user>/apache`
+
+3. Create service(clusterIp type), this gives the service a "DNS" address: `kubectl -n linkerd-demo expose deployment apache --type=ClusterIp --port=80`
+
+4. Create http client deployment: `kubectl -n likerd-demo create deployment client --image=<docker_user>/client`
+
+5. Expose application locally: `kubectl -n linkerd-demo port-forward svc/apache 8888:80`
+
+6. Check services are up, indicate namespace so it doesn't capture default namespace: `kubectl get pods -n linkerd-demo`, `kubectl get deploy -n linkerd-demo`
+
+8. If all good you can test it on your browser with `127.0.0.1:8888`
+
+7. If you need to debug, copy the pod name that is not running: `kubectl logs pod/<pod_name> -n linkerd-demo`. Or if you need to delete something use `kubectl get deploy -n linkerd-demo`, `kubectl delete deploy <name> -n linkerd-demo`
+
+### Inject Linkerd Proxy into "linkerd-demo" Pods/Applications
+
+1. `kubectl get -n linkerd-demo deploy -o yaml \ 
+| linkerd inject - \
+| kubectl apply -f -`
+
+2. `kubectl -n linkerd-demo get deployments` or `kubectl get deploy <deploy_name> -n linkerd-demo -o yaml`, the later writes the configurations into a yaml file, in this file we can see the `template:metadata:annotations:linkerd.io/inject: enabled` annotation. The pods should have two containers now, check `kubectl get pods -n linkerd-demo`
+
+3. You can check Linkerd dashboard by now `locahost:50750`
+
+#### (Optional) Use Embedded Grafana
+
+1. Search in the official documentation the instructions but you should see some info indicating the dashboard should have a working instance of "Prometheus", check all components are running `kubectl get ns` copy dashboard namespace(linkerd-viz) and check the pods in the namespace `kubectl get pods -n linkerd-viz`, you should see the Prometheus pod up. The linkerd namespace on the other hand should have the control plane pods(they are not named control plane literally)
+
+3. Install Grafana: `helm repo add grafana https://grafana.github.io/helm-charts
+helm install grafana -n grafana --create-namespace grafana/grafana \
+  -f https://raw.githubusercontent.com/linkerd/linkerd2/main/grafana/values.yaml`
+
+4. Under "namespaces" you should see a Grafana column and icon. So Check the Apache server plot by clicking on a Grafana icon
+
+5. If grafana not working try to install dashboard again`linkerd viz install --set Grafana.url=Grafana.grafana:3000\
+| kubectl apply -f -`
+
+6. You may need to unistall Linkerd dashboard and reinstall: `linkerd viz uninstall -o yaml | kubectl delete -f -` and reinstall with command on step 5 and do a `linkerd check` if you want to confirm is all good
+
+#### Check Linkerd Observability info
+
+1. `linkerd -n linkerd-demo stat deploy`
+
+2. `linkerd -n linkerd-demo top deploy`
+
+3. `linkerd -n linkerd-demo top deploy/client`
+
+#### Injecting Faults
+Lets us split network traffic. Look for "Injecting Faults" in Linkerd official documentation. As explained previously, both client and server have injected a proxy, and a 'dummy' container with its proxy has to be created and this proxy is the one that talks to the control plane
+
+1. Copy the error-injector yaml file in the example of official documentation
+
+2. create a yaml in the directory where both, client and server lives: `nano split.yaml` and paste code`
+
+3. Put correct namespace name in all namespace fields
+
+4. create Kubernetes objects `kubectl apply -f split.yaml`, check services `kubectl get svc -n linkerd-demo`
+
+5. Expose this service with a port forward `kubectl port-forward svc/error-injector 6001:8080 -n linkerd-demo`. check on browser it fails "127.0.0.1:6001"
+
+6. Create Dummy Container: `kubectl create deployment dummy --image=apache -n linkerd-demo`, remember apache is the deployment name
+
+7. Check dummy is running: `kubectl get svc -n linkerd-demo`
+
+8. Expose dummy container with a clusterIP service `kubectl -n linkerd-demo expose deployment dummy --type=ClusterIP --port=80`
+
+9. Inject proxy to all(again): `kubectl get -n linkerd-demo deploy -o yaml \
+| linkerd inject - \
+| kubectl apply -f -`
+
+10.(optional) check pods `kubectl get pods -n linkerd-demo`
+
+11. Check dummy service is working good: `kubectl get svc -n linkerd-demo`
+
+12. Following documentation, we need to get to "Inject Faults" section and copy the app/service that doesn't fail from the documentation(currenctly called "booksapp"). Create a yaml file `inject.yaml`, paste code and put correct namespace, and also the port in "parentRefs:port" tag put 80 and under "rules:backndRefs" one has to be named as the server, in our case is "apache" this is in port 80 and the "error-injector" port will be 8080, put 50 and 50 under each "weight" tag.
+
+13. Build the Kubernetes objects `kubectl apply -f inject.yaml`
+
+14. Depending on your configurations in the "inject.yaml" file you might have an error. That is, if your entry service("parentRefs" tag) is the dummy server and the apache service is a child("backendRef" tag) then the client is sending to the wrong POD so basically we just need to swap between dummy and apache, apache will be the entry (the one declared in "parentRefs" tag) and dummy will be declared in("backendRef" tag), be aware client is not part of the injection at this point, it actually was injected previously. We are using this Hacky solution to avoid recompiling containers
+
+15. If after you check the dashboard there is nothing new indicating traffic success and failure check the pods, `kubectl get pods -n linkerd-demo` if a container has stop like the client this code will bring it back to life(it will be restarted) `kubectl delete pods <pod_name> -n linkerd_demo`, and check logs in traffic recievers if necessary `kubectl logs deploy/error-injector -n nginx linkerd-demo -f`. now the dummy with `kubectl logs deploy/dummy -n linkerd-demo  -f` this one actually return the linkerd-proxy so do a `kubectl logs deploy/dummy -n linkerd-demo apache -f`, here we are specifying we want the logs of the apache server
+
+16. pending from 1:13:00, example was not finished
 
 ## Linkerd Commands
 * `linkerd uninstall | kubectl delete -f -`: uninstall linkerd
