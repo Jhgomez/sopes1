@@ -344,16 +344,19 @@ The structure that manages process in C is called PCB, is used to manage their l
 Just one program executes in a process at a time
 
 ### Multiprogramming(Paralel/Asynchronous)
-Programs alternates execution over the same process, it looks like they being executed separately however they are in the same process acutally
+Programs alternates execution over the same process, it looks like they being executed separately however they are in the same process acutally. Asynchronous programming is more like a model, it is used to achieve concurrency. Asynchronous model describes that a process can execute other tasks/computations while a long running task is running in the background(like reading/writing a file or a DB) and when it is completed continue executing the next tasks, so basically asynchronous programming is used to achive concurrency
 
 ### Concurrency
 Several programs exists at the same time but only one is executed, most of the times means there is only one CPU
 
 #### Inheritably and Potential Concurrency
-Inheritably when they are forcibly executing actions simultaneously due to the nature of its environment, cashiers. Doesn't need to  be concurrent but it will benefit the system to speed up cexecution  
+Inheritably when they are forcibly executing actions simultaneously due to the nature of its environment, cashiers. Doesn't need to  be concurrent but it will benefit the system to speed up execution.
 
 ### Parallelism
-Exists more than one CPU so more than one program is executed at the same time. Is a particular case of concurrency, basically two or more concurrency executions are happening. Multiprocessors are needed to use parallelism
+Exists more than one CPU so more than one program is executed at the same time. Is a particular case of concurrency, basically two or more concurrency executions are happening. Multiprocessors are needed to use parallelism. Basically is a way to achieve concurrency
+
+### Concurrency vs Asynchrony vs Parallelism
+To achieve concurrency we only need one or more computational resources, if there is only one computational resources we need to execute tasks asynchronously to achieve concurrency. If we two or more computational resources we can either execute tasks in parallel to achieve concurrency and/or combine parallelism and asynchronous execution to achieve greater concurrency
 
 The scheduler is in charge of deciding what and how processes will be executed on CPU
 
@@ -1251,12 +1254,22 @@ Redis is a key/value database
 
 * run redis on you computer with docker `docker run -it -d redis`
 * enter the redis container CLI `docker exec -it <container_id> /bin/bash`
+* execute command: `redis-cli`
 * We can run commands now like `set a 1`, remember is a key value so "a" is set to 1
 * `get a`
 * we can use HashTables to store values
-* `set studend1 juan`, `set studend2 pedro`, `set studend:1 juan`
-`set studend:1 juan`, `keys student:*`(gets all students but not the values, it shows the object name and the key), `set contador 1`, `INCR contador`(increments the variable), `keys *`, set an auto-expire key `EXPIRE contador 20`, see more commands in the official documentation. It is very common to use this as for caching info or info that is very volatile. Hashs tables alook like `HSET myhash field1 "juan"` or `HSET student-2 name "lucas"`, `HGETALL student-1`, `HGETALL student-1 name`
-* I can use the redis cli, once inside containers cli run `redis-cli`, try a `PUBLISH sopes1 hola`
+* `set studend1 juan`, `set studend2 pedro`
+* `set studend:1 juan` and `set studend:1 juan` and then `keys student:*`(gets all students but not the values, it shows the object name and the key), like how many student entries there are
+* `set contador 1`, `INCR contador`(increments the variable)
+* `keys *` this would returned all the previously defined keys, (a, student1, student2, student:1, student:2, contador) 
+* set an auto-expire key `EXPIRE contador 20` this key expires(dissapears) in 20 seconds, see more commands in the official documentation. 
+* It is very common to use this as for caching info or info that is very volatile. 
+* Hash tables look like `HSET <a_hash_code/a_key> <like_a_column_name> <the_value>`, so we could do an entrie like `HSET student-1 name "lucas"`, `HSET student-1 address "mixco"` and `HSET student-2 name "juan"`, `HSET student-2 address "miraflores"`.
+* `KEYS student-*` will print all "student-" keys ("student-1", and "student-2")
+* `HGETALL student-1` it will return all fields( "name" "lucas" "address" "mixco")
+* `HGETALL student-1 name` just returns the value of the specified field it prints "lucas"
+* I can use the redis cli, once inside container's cli run `redis-cli`, try chennels with: `SUBSCRIBE sopes1`, cli will enter to "subscribe mode". Open other terminal and enter the docker container `docker exec -it <container_id> /bin/bash`, run cli `redis-cli`, and now publish a message to the channel we just open with `PUBLISH sopes1 "hola"`
+* Kafka can do some channels also it can manange a message channels/queues but originally it was to manage files instead of messages so everything is actually handled as files but they are messages, RabitMQ is an alternative to Kafka
 * It can store bytes
 
 Valkey is a Redis fork
@@ -1405,6 +1418,18 @@ Lets us split network traffic. Look for "Injecting Faults" in Linkerd official d
 15. If after you check the dashboard there is nothing new indicating traffic success and failure check the pods, `kubectl get pods -n linkerd-demo` if a container has stop like the client this code will bring it back to life(it will be restarted) `kubectl delete pods <pod_name> -n linkerd_demo`, and check logs in traffic recievers if necessary `kubectl logs deploy/error-injector -n nginx linkerd-demo -f`. now the dummy with `kubectl logs deploy/dummy -n linkerd-demo  -f` this one actually return the linkerd-proxy so do a `kubectl logs deploy/dummy -n linkerd-demo apache -f`, here we are specifying we want the logs of the apache server
 
 16. pending from 1:13:00, example was not finished
+
+# Class 17(26/12/24)
+We made the 2nd exam and teacher explained 2nd project
+
+## 2nd Project
+To install kafka use confluent libraries on the internet there is an example in go, we will be able to see there how to run Kafka queues. we can also check his repo called "CloudNativeNov2023" here we will see how go produces Kafka messages and the consumer which is based on confluent libraries. Use Strimzi to install Kafka, check their quick start documentation
+
+Grafana can be installed using his books repo called "Edge-Computing-Systems-with-Kubernetes" in chapter 11 just take off the volumes section on line 36. We can find a Redis example in chapter 10 and 11, preferably in chapter 10, just ignore volumes
+
+To create Grafana Plots/charts it might be best to use Redis Hash Tables because they can work like counters or we could have two variables, one is like a counter. For example each region, faculty, Assigned can have a hash table. Again use hash tables and counters, that should be all you need
+
+A good start would be installing Kubernetes, Harbor, then create an image in Kubernetes with the credentials to call the Harbor registry, this has to happen in a namespace, then create deployment. then install databases
 
 ## Linkerd Commands
 * `linkerd uninstall | kubectl delete -f -`: uninstall linkerd
