@@ -1431,6 +1431,21 @@ To create Grafana Plots/charts it might be best to use Redis Hash Tables because
 
 A good start would be installing Kubernetes, Harbor, then create an image in Kubernetes with the credentials to call the Harbor registry, this has to happen in a namespace, then create deployment. then install databases
 
+# Class 18(27/12/24)
+
+## Project 2
+Again we saw technologies we need in project 2. We saw how to configure Kafka in Kubernetes following Strimzi guidelines and using confluent libraries to configure the the producer and consumer in Golang. Then we saw hwo to configure a "secret" to be able to access private registry from Kubernetes official documentation [here](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-secret-by-providing-credentials-on-the-command-line). Teacher showed how to create a user and set the password of the user in Harbor to be able to execute the Kubernetes command that crates the secret key(01:00:00) and also after that showed what tags are needed to declare the secret in the container/pod level(imagePullSecrets:name). This was tested with a private image of an apache server(httpd), when the deployment is created and running we can check on our website the apache website included by default just listen to your local host in the por you define when you create the deployment using a port-forward Kubernetes service
+
+For final test go to uedi to "parcial 2: Procesos y concurrencia del 13 de diciembre ..." to file "Inter Process Communication(IPC)" page 14, 18 through the end of file. Producer, consumer, "deadlock(exclusion mutua) implementation" and traffic light(semaforo)
+
+Also for the final test read the document in "Final - Aplicacion de concurrencia ..." to file "Libro William - Stallings sobre procesos - Dekker ..", read dekker algorithms chapter 4/book's page 170
+
+Read about "Esquimales", "Filosofos Comensales" and "Barbero Dormilon", "Panaderia de Lamport", "Fumadores de cigarros". Just for the sake of knowledge see "yaeger" and "tracing(tracy)", Also read the "Node.js+MongoDB tecnologias de paralelismo" explains why the combination works great in social networks 
+
+Cloud native Guatemala official community https://community.cncf.io/cloud-native-guatemala/
+
+12 factor app
+
 ## Linkerd Commands
 * `linkerd uninstall | kubectl delete -f -`: uninstall linkerd
 
