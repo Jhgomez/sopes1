@@ -200,7 +200,7 @@ An example of different clouds is: In a university students data lives in a priv
 #### Software
 Software like OpenStack, VMWare ESXI and Open Nebula and many more are used for creating clouds.
 
-# Class 6
+# Class 6(12/10/24)
 
 ## Containers Advantages
 
@@ -276,7 +276,7 @@ note: kubevirt provides virtualization API for Kubernetes, run and manage virtua
 16. For fun lets replicate our docker-hub registry to this private one. In Harbor go to "Registries", click "New Endpoint", enter the info required and create a "replication rule", you might need to select "pull based" in your rule
 
 
-# Class 7
+# Class 7(11/12/24)
 Non-functional attributes, system attributes
 
 ## Golden Metrics
@@ -288,7 +288,9 @@ In class we made and example of configuring Grafana with MySQL using docker comp
 
 2. get the info, use `ps -aux` to see resource usage by process and do `ps -ax | awk '{print $1,$4} | tail -5' this will print last 5 processes number and the command it is executing
 
-# Class 8
+# Class 8(12/12/24)
+We saw a little harbor and oras at first
+
 ## Processes
 In SO GNU/Linux we can find the processes info in "/proc", a directory is created for each process ID, so basically a list of processes ID. A host can monitor/see a guest processes info. You can enter a process directory and check more file with the process info there, like "statm" which is the memory used by the process
 
@@ -336,7 +338,7 @@ The structure that manages process in C is called PCB, is used to manage their l
 * Priority
 * State
 
-# Class 10
+# Class 10 (13/12/24)
 
 ## Parallelism and Concurrency
 
@@ -377,7 +379,7 @@ Happens when process a is talking to process b and process c is talking to d, if
 
 If any of the above are false tbe it could be that a very odd situation is happening, called indefinite postergation which means the resources could be free up sometime later
 
-# Class 11
+# Class 11 (16/12/24)
 Teacher was not recording the class so I couldn't know what he talked about first.
 
 It is possible through google's cloud service called GKE. Is under the "Kubernetes engine" and "Clusters". Remember to apply an all in all out firewall rule. If you want to run it from your local machine first install google cloud SDK and then install "kubectl", kubectl credentials are in Clusters>MyCLuster>Details>Show Cluster Certificate
@@ -420,7 +422,7 @@ It will contain an Nginx POD, Nginx is a web server, load balancer, etc. Be awar
 6. `kubectl get nodes -o wide`: shows IP and more
 7. `kubectl describe nodes <node_name> | grep  ExternalIP`
 
-Just to test the default clusterIP service just do step 1 to 3 and then run this other image which is available in Docker Hub and is called "alpine/curl". So this pod will have an instance of this image
+Just to test the default clusterIP service just do step 1 to 3. In step 1 change image to "alpine/curl". So this pod will have an instance of this image that has the curl program installed. We will try to connect to the service `mipod-svc` from this other pod we are creating below
 
 1. `kubectl run -it curl --rm --image=alpine/curl \ --curl http://mipod-svc --restart=Never -- curl http://mipod-svc`: the `--` at the end indicates a command we can execute we could access the pod using `/bin/[bash/sh]` but since we have the curl program in this image we will run it using the mipod 3alias to connect to the other pod, just like in docker when we connect to another container inside the same docker network, either the default or a custom one, we can use the container name to connect to it without using its IP address specifically.
 2. `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
@@ -1102,7 +1104,7 @@ status
 * `kubectl run terminal --image=busybox --restart=Never --rm -it -n <namespace_name> -- sh`
 * `kubectl run -it curl --rm --image=alpine/curl \ --restart=Never -- curl http://<>`: the last parameter is a command that will run on the command line of the container
 
-# Class 14 
+# Class 14 (12/19/24)
 
 ## Helm
 Helps us install packages, we can think of it as the Ubuntu's "apt" but in Kubernetes, we can used existing packags or we can build custom ones. 
@@ -1117,16 +1119,17 @@ https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 Taken from [official docu](https://helm.sh/docs/intro/install)
 
 ## Helm + Nginx Ingress
-We're  going to use an ingress controller to be able to use domain name. Ingress controller helps us set up a load balancer and assign it a domain name. This load balancer is shared because load balancers only allows traffic through prot 80 and 443, only http and https traffic. Controller would by some sort of driver and Ingress uses this driver like component
+We're  going to use an ingress controller to be able to use domain name. Ingress controller helps us set up a load balancer and assign it a domain name. This load balancer is shared because load balancers only allows traffic through port 80 and 443, only http and https traffic. Controller would be some sort of driver and Ingress uses this driver like component
 
 ## Commands to install Ingress Controller
 * `kubectl create ns nginx-ingress`: create a namespace
-* `helm repo add ingress-nginx https://kubernetes.github.io/ingres-nginx`: similar to adding a source in apt
+* `helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx`: similar to adding a source in apt
 * `helm repo update`
-* `helm install nginx-ingress ingress-nginx/ingress-nginx -n nginx-ingress`/`helm install <give_installation_a_name> <repo>/<file> -n <middle_component_installs_with_intallation_name_in_the_specified_name>`
+* `helm install nginx-ingress ingress-nginx/ingress-nginx -n nginx-ingress`/`helm install <give_installation_a_name> <repo>/<file> -n <middle_component_installs_with_intallation_name_in_the_specified_name_space>`
 * `helm list -n nginx`
 * `helm uninstall nginx-ingress -n nginx-ingress`
 * `kubectl get services -n nginx-ingress`
+* `kubectl get ingressclass`: shows ingress controller info
 
 [source](https://kubernetes.github.io/ingress-nginx/deploy/#using-helm)
 

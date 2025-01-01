@@ -75,7 +75,8 @@ These are some Docker commands you might need
 * Forces removal of specific image:  `docker rmi -f <<id image>>` 
 * List volumes: `docker volume ls`
 * Create a volume: `docker volume create <name>`
-* docker-compose up -d --force-recreate --build
+* `docker-compose up -d --force-recreate --build`
+* `docker history --no-trunc=true <image_name> > <file_name>`: this gets the docker command history written in the file name given
 
 
 ## Installing in Ubuntu
