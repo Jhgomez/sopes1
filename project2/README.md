@@ -33,6 +33,7 @@ we should use the `venv` application to create these environments.
 5. We wrote the courses generator file using "json", "random" and "io" libraries. After you create this Python file "gradesJsonGenerator.py" run it using `python gradesJsonGenerator.py`, you will get a json with sample grades
 
 ## Set up Locust
+If you see the oras code there, you can comment it out and when we set up Harbor and Oras reinstate the code.
 
 1. Install Locust following the [official documentation](https://docs.locust.io/en/stable/installation.html). Basically just do `pip install locust`
 
@@ -248,16 +249,40 @@ I will follow the [official documentation](https://goharbor.io/docs/2.12.0/insta
 12. Under the "sopes1" project go to the "members" tab and add a user with same name, "sopes1". Give it admin role
 
 
-13. In the next step we will log in to our private registry through Docker but Docker client always attempts to connect via https, it looks like our previous set up is missing some TLS connections so we are just going to configure Docker client to allow connections to insecure registries via http protocols. So follow [this guide](https://goharbor.io/docs/1.10/install-config/run-installer-script/#connect-http). Basically add this `"insecure-registries" : ["35.223.33.184.nip.io", "35.223.33.184"]` tp the config Json in `C:\Users\Juan Enrique\.docker\daemon.json` and in `windows-daemon.json`. More configurations can be found [here](https://docs.docker.com/reference/cli/dockerd/#/windows-configuration-file)
+13. In the next step we will log in to our private registry through Docker but Docker client always attempts to connect via https, it looks like our previous set up is missing some TLS connections so we are just going to configure Docker client to allow connections to insecure registries via http protocols. So follow [this guide](https://goharbor.io/docs/1.10/install-config/run-installer-script/#connect-http). Basically add this `"insecure-registries" : ["35.223.33.184.nip.io", "35.223.33.184"]` to the config Json in `C:\Users\Juan Enrique\.docker\daemon.json` and in `windows-daemon.json`. More configurations can be found [here](https://docs.docker.com/reference/cli/dockerd/#/windows-configuration-file)
 
 
-14. Now you have to login to your private registry. Log out from your docker account If you're logged in to your docker account `docker logout` and then `docker login <ip_address_or_DNS_if_you_configured_one> -u <ususario(sopes1)>` this is `docker login 35.223.33.184.nip.ip -u sopes1` and enter password "!\09IZbZ$3pC"
+14. Now you have to login to your private registry. Log out from your docker account If you're logged in to your docker account `docker logout` and then `docker login <ip_address_or_DNS_if_you_configured_one> -u <ususario(sopes1)>` this is `docker login 35.223.33.184.nip.io -u sopes1` and enter password "!\09IZbZ$3pC"
 
 
 15. Now in Harbor's "projects" view find "Repositories" tab and to the right a button with the name "PUSH COMMAND" find the ones you might need there. For example to tag an image for example an image I created called "juan503/kafka_client" we retag it with a different name with `docker tag juan503/kafka_client:latest 35.223.33.184.nip.io/sopes1/kafka_client:latest` and then push it `docker push `35.223.33.184.nip.io/sopes1/kafka_client:latest` then I can pull it up anywhere if I'm logged in to the registry with `docker pull 35.223.33.184.nip.io/sopes1/kafka_client:latest`
 
+16. (Optional) if you even need to restart Harbor or reconfigure Docker on your computer. Follow [this guide](https://goharbor.io/docs/1.10/install-config/run-installer-script/#connect-http) to restart both and remember to do the `daemon.json` docker configurations
+ 
+## Configure ORAS
+Registries are evolving as generic artifact stores. ORAS is a technology that lets us create OCI artifacts and push and pull them form OCI registries. I followed the [official documentation](https://oras.land/docs/installation/) to install it, produce an OCI artifact from the JSON file containing the courses/assignations information to push it to our Harbor registry and then consume it from locust
+
+1. I'm using git bash in windows. `curl -sLO  https://github.com/oras-project/oras/releases/download/v1.2.2/oras_1.2.2_windows_amd64.zip`
+
+
+2. unzip it `tar -xvzf oras_1.2.2_windows_amd64.zip`
+
+
+3. Add the directory address containing the .exe file to your PATH variable
+
+
+4. In our set up the https certificate does not handle TLS certificates as it is not configured in a cloud provider so we need to do something similar as we did with Docker. In this case we need to see the [following guide](https://oras.land/docs/compatible_oci_registries/#using-a-plain-http-docker-registry) which explains how to interact with http registries(AKA insecure registries). Basicallly to any pull, push or login command append the `--insecure` flag
+
+
+5. Login to oras using the registry `oras login [flags] <registry>` so in my case I will do a `oras login 35.223.33.184.nip.io --insecure -u sopes1` and enter password "!\09IZbZ$3pC". I can also do the plain http `oras login 35.223.33.184 --insecure -u sopes1`
+
+
+6. The first thing we will push to Harbor in an OCI format is the json file in the locust directory. `oras push --insecure 35.223.33.184.nip.io/sopes1/courses:latest courses.json`. This command could repacle `--insecure` tag with the `--plain-http` tag and push it using the IP address `oras push --insecure 35.223.33.184/sopes1/courses:latest courses.json`
+
+7. To test this we could delete the json file and then run `oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest`
 
 ## Containerizing applications(Dockerizing Applications)
+
 Here is a very interesting [document](https://www.michalklempa.com/2023/03/combining-docker-images/) explaining what multi-layer docker images are and how we can inspect images further. `docker history --no-trunc=true <image_name> > <file_name>`, this gets the docker command history written into the file name given. `docker run --entrypoint '' --rm -it <image_name> /bin/sh`: This could helps us debug an image, basically we pass an empty entry point and then we execute the shell with the last command `/bin/sh` it could be /bin/bash`, after this we could try things like get the file address of a binary like `which curl` or `which java`, etc. To build all images I went to through their official repo
 
 ### List of containers ports
