@@ -51,13 +51,16 @@ class GradesJsonGenerator:
 
   def __init__(self, fileName, entries):
     self.grades = []
-    self._generateIngenieria(fileName, entries*0.4)
     # self._generateArquitectura(fileName, entries*0.3)
-    self._generateMedicina(fileName, entries*0.2)
+    
     # self._generateHumanidades(fileName, entries*0.1)
+    
+    for _ in range(entries):
+      self._generateMedicina(fileName, 1)
+      self._generateIngenieria(fileName, 1)
 
     with open(f"./{fileName}.json", 'w') as file:
       json.dump(self.grades, file, indent = 2, ensure_ascii=False)
 
 
-generator = GradesJsonGenerator("courses", 1000)        
+generator = GradesJsonGenerator("courses", 500)        
