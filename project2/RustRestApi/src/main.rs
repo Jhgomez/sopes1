@@ -47,12 +47,64 @@ async fn course(course: web::Json<Course>) -> impl Responder {
     // };
 
     if let Err(e) = con
-        .json_set::<&str, &str, web::Json<Course>, ()>("assignacion:2", "$", &course)
+        .incr::<&str, i32, ()>("Regioncounter", 1)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .body(format!("Error addub to region counter: {}", e));
+    };
+
+
+    if let Err(e) = con
+        .incr::<String, i32, ()>(format!("{}counter", &course.facultad), 1)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .body(format!("Error addub to region counter: {}", e));
+    };
+
+    if let Err(e) = con
+        .incr::<String, i32, ()>(format!("{}counter", &course.curso), 1)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .body(format!("Error addub to region counter: {}", e));
+    };
+
+
+    if let Err(e) = con
+        .json_set::<&str, &str, web::Json<Course>, ()>("asignacion", "$", &course)
         .await
     {
         return HttpResponse::InternalServerError()
             .body(format!("Error setting json to redis: {}", e));
     };
+
+    if let Err(e) = con
+        .json_arr_append::<&str, String, web::Json<Course>, ()>("region", format!("$.{}", &course.region), &course)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .body(format!("Error setting json to redis: {}", e));
+    };
+
+    if let Err(e) = con
+        .json_arr_append::<&str, String, web::Json<Course>, ()>(&course.facultad, format!("$.{}", &course.carrera), &course)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .body(format!("Error setting json to redis: {}", e));
+    };
+
+    if let Err(e) = con
+        .json_arr_append::<&str, String, web::Json<Course>, ()>(&course.curso, format!("$.{}", &course.carrera), &course)
+        .await
+    {
+        return HttpResponse::InternalServerError()
+            .body(format!("Error setting json to redis: {}", e));
+    };
+
+    println!("chi");
 
     // let result = match con.get::<&str, isize>("my_key").await {
     //     Ok(connection) => connection,
@@ -68,6 +120,8 @@ async fn course(course: web::Json<Course>) -> impl Responder {
 async fn main() -> std::io::Result<()> {
     let host = env::var("RUST_SERVER_HOST").unwrap();
     let port = env::var("RUST_SERVER_PORT").unwrap();
+
+    println!("hola");
 
     HttpServer::new(|| App::new().service(hello).service(course))
         .bind((host, port.parse().unwrap()))?
