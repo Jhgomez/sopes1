@@ -14,6 +14,8 @@ import (
 	"syscall"
 
 	"github.com/IBM/sarama"
+
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -52,6 +54,8 @@ type Course struct {
 
 func main() {
 	log.Println("Starting a new Mongo client")
+
+	// TODO create user authentication by creating a user with a password, in the meantime the default user is used
 	mongoClient, err := mongo.Connect(context.TODO(), options.Client().
 		ApplyURI(MONGODB_URI))
 
@@ -59,7 +63,8 @@ func main() {
 		panic(err)
 	}
 
-	assignmentCollection = *mongoClient.Database("Course").Collection("Assignments")
+	// This creates the db and collection
+	assignmentCollection = *mongoClient.Database("Course").Collection("Assignations")
 
 	defer func() {
 		if err := mongoClient.Disconnect(context.TODO()); err != nil {
@@ -199,7 +204,6 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	// The `ConsumeClaim` itself is called within a goroutine, see:
 	// https://github.com/IBM/sarama/blob/main/consumer_group.go#L27-L29
 	for {
-		var course Course
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
@@ -210,12 +214,40 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 			log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 			session.MarkMessage(message, "")
 
+			var course Course
+			var result bson.M
+
+			// unmarshal JSON to a Course object to be able to push it to insert it to MongoDb
 			err := json.Unmarshal([]byte(message.Value), &course)
 			if err != nil {
 				fmt.Println("Error unmarshalling Json to struct:", err)
 			} else {
+				// Insert it to Mongo
 				assignmentCollection.InsertOne(ctx, course)
 			}
+
+			// Set options to only retrieve the latest match
+			opts := options.FindOne().SetSort(bson.D{{Key: "$natural", Value: -1}})
+
+			// get the value we just inserted just to play with database
+			err = assignmentCollection.FindOne(ctx, bson.D{{Key: "curso", Value: course.Curso}}, opts).Decode(&result)
+
+			if err == mongo.ErrNoDocuments {
+				log.Panicf("No document was found with the title %s\n", course.Curso)
+			}
+
+			if err != nil {
+				log.Println(4, err)
+			}
+
+			jsonData, err := json.MarshalIndent(result, "", "    ")
+
+			if err != nil {
+				log.Println(5, err)
+			}
+
+			// Print the value retrieved from DB
+			fmt.Printf("%s\n", jsonData)
 
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
