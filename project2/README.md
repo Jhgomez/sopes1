@@ -129,7 +129,17 @@ curl http://localhost:8020/course \
 
 #### Set up Redis Client in Rust REST API server
 
-1. First we are going to create a Redis database Docker container using the Bitmani's image, see [here](https://hub.docker.com/r/bitnami/redis) for info on how to set it up. Basically, assuming you have docker desktop installed and running, run bellow command(6379 is default port). optionally you can use the official [redis alpine version](https://github.com/docker-library/docs/tree/master/redis) with the image `redis:8.0-M02-alpine3.20`, the volume would be `-v /docker/host/dir:/data`
+1. Now we will set up the Redis client using [redis-rs](https://github.com/redis-rs/redis-rs) rust library. In the root directory of your server run, we added redis with asyn and json support to be able to create client connections asynchronously, and be able to send json to redis db `redis = { version = "0.27.6", features = ["async-std-comp", "json"] }`, also serde to be able to serialize and deserialize json `serde = { version = "1.0", features = ["derive"] }`, we need to deserialize when we receive the Json in post request and be able to serialize it when we send it to Redis db. Be aware we would have needed `serde_json` but `redis_rs` function to insert json actually does this for us, we just need to pass the json and it serializes it for us, but our json has to be serializable and we do this with `serde`. You also have to set environment variables to the Redis db with the following commands on CLI(redis default prot is 6379)
+```bash
+RUST_REDIS_PORT=6379
+RUST_REDIS_HOST=<kubernetesObjectTag>
+```
+
+2. Since I'm using Windows and we will copy an native image to a rust docker container we need to compile it using WSL so I need to install rust from WSL with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` and then install gcc, Rust needs its linker, `sudo apt-get install gcc`
+
+3. Build an executable using `cargo build` will create a "debug" version or `cargo build --release` will build an optimized version of the executable. you can launch it using `cd target/release` and then just `./redis_client`. FYI there is also another command to compile it to an executable using `rustc main.rs` but this is a little more complicated to use, so is basically for a little more advanced users.
+
+5. I can test it using Docker. I'm going to create a Redis database Docker container using the Bitmani's image, see [here](https://hub.docker.com/r/bitnami/redis) for info on how to set it up. Basically, assuming you have docker desktop installed and running, run bellow command(6379 is default port). optionally you can use the official [redis alpine version](https://github.com/docker-library/docs/tree/master/redis) with the image `redis:8.0-M02-alpine3.20`, the volume would be `-v /docker/host/dir:/data`
 ```bash
 docker run --rm -d -it \
     --name=redis-server \
@@ -137,19 +147,84 @@ docker run --rm -d -it \
     -e REDIS_PASSWORD=course -e REDIS_MASTER_PASSWORD=course   \
     -p 6379:6379 \
     redis:8.0-M02-alpine3.20
+
+docker ps # write down container id
+
+docker exec -it <container_id> sh  # this start the alpines's command line
+
+redis-cli  # access redis CLI to interact with Redis server
 ```
 
-2. Now we will set up the Redis client using [redis-rs](https://github.com/redis-rs/redis-rs) rust library. In the root directory of your server run, we added redis with asyn and json support to be able to create client connections asynchronously, and be able to send json to redis db `redis = { version = "0.27.6", features = ["async-std-comp", "json"] }`, also serde to be able to serialize and deserialize json `serde = { version = "1.0", features = ["derive"] }`, we need to deserialize when we receive the Json in post request and be able to serialize it when we send it to Redis db. Be aware we would have needed `serde_json` but `redis_rs` function to insert json actually does this for us, we just need to pass the json and it serializes it for us, but our json has to be serializable and we do this with `serde`. You also have to set environment variables to the Redis db with the following commands on CLI(redis default prot is 6379)
-```bash
-RUST_REDIS_PORT=6379
-RUST_REDIS_HOST=<kubernetesObjectTag>
-```
+5. Search [here](https://redis.io/docs/latest/commands/) for JSON commands, remember we are storing JSON at very least we will use `JSON.GET `
 
-3. Since I'm using Windows and we will copy an native image to a rust docker container we need to compile it using WSL so I need to install rust from WSL with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` and then install gcc, Rust needs its linker, `sudo apt-get install gcc`
+6. Bellow is the logic using Redis commands to insert and read the info to and from Redis
 
-4. Build an executable using `cargo build` will create a "debug" version or `cargo build --release` will build an optimized version of the executable. you can launch it using `cd target/release` and then just `./redis_client`. FYI there is also another command to compile it to an executable using `rustc main.rs` but this is a little more complicated to use, so is basically for a little more advanced users.
+// ---- Counters ---- //
 
-3. We will come back later to add logic to create displays in Grafana by storing the information in a convenient way
+
+INCR Regioncounter
+INCR {facultad}counter
+INCR {curso}counter
+
+
+
+// ---- inserts ---- //
+
+//////***** By Region *****////////
+JSON.ARRAPPEND region $.{region} {object(object is turn to json by Redis API)}
+
+//////***** By Facultad and Carrera *****////////
+JSON.ARRAPPEND {facultad} $.{carrera} {object}
+
+//////***** By Curso and Carrera *****////////
+JSON.ARRAPPEND {Curso} $.{carrera} {object}
+
+
+
+// ---- gets(get length of each array) ---- //
+
+//////***** By Region *****////////
+JSON.ARRLEN region $.{region} // try this per region
+// or
+JSON.ARRLEN region '$.[*]' // get length of all sections in this object
+
+//////***** By Facultad and Carrera *****////////
+JSON.ARRLEN {facultad} $.{carrera} // try this per facultad and carrera
+// or
+JSON.ARRLEN {facultad} '$.[*]' // get length of all sections in this object
+
+//////***** By Curso and Carrera *****////////
+JSON.ARRLEN {Curso} $.{carrera} // try this per facultad and carrera
+// or
+JSON.ARRLEN {Curso} '$.[*]' // get length of all sections in this object
+
+
+
+
+// --- Initialization commands --- //
+We would have to figure out a way to do this just once but for the project it is fine to do this when rust server is initialized, in a real life scenario we could do it with a init container maybe 
+
+JSON.SET region $ '{"METROPOLITANA":[], "NORTE":[], "NORORIENTAL":[], "SURORIENTAL":[], "CENTRAL":[], "SUROCCIDENTAL":[], "NOROCCIDENTAL":[], "PETEN":[]}'
+
+JSON.SET Ingenieria $ `{"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]}` 
+
+JSON.SET Medicina $ `{"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]}` 
+
+JSON.SET SO1 $ `{"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]}` 
+
+JSON.SET IA $ `{"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]}` 
+
+JSON.SET LAB $ `{"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]}` 
+
+JSON.SET SA $ `{"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]}` 
+
+JSON.SET OLC2 $ `{"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]}` 
+
+JSON.SET PA2 $ `{"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]}` 
+
+JSON.SET PED $ `{"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]}` 
+
+
 
 #### Set up Kafka Producer and Consumer
 ##### Producer
@@ -158,18 +233,33 @@ The gRCP server will be implementing a Kafka client using [sarama](https://githu
 ##### Consumer(another deployment)
 This is another deployment, this is not a server just a program with a Kafka consumer that at the same time will have a MongoDB client. It will push the info to MongoDB to be inserted as a Log when it receives it from Kafka, I used a "ConsumerGroup" but I could have used just a plain "Consumer"
 
-docker run -d --name broker -p 9092:9092 apache/kafka:latest
-docker ps # write down container id
-docker exec -it <container_id> /bin/sh  # this start the container's command line
-cd /opt/kafka/bin/ # move to folder where Kafka is installed
-./kafka-topics.sh --bootstrap-server localhost:9092 --create --topic <topic_name>  # create the topic in the broker
-./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic <topic_name> --from-beginning  # start listening
 ```bash
+docker run -d --name broker -p 9092:9092 apache/kafka:latest
+
+docker ps # write down container id
+
+docker exec -it <container_id> bin/sh  # this start the container's command line
+
+cd /opt/kafka/bin/ # move to folder where Kafka is installed
+
+./kafka-topics.sh --bootstrap-server localhost:9092 --create --topic <topic_name>  # create the topic in the broker
+
+./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic <topic_name> --from-beginning  # start listening
+```
 
 Start your servers and send traffic to them using Locust in the Locust section
 
 ###### Add MongoDB client
-The MongoDB Go driver needs instructions on where and how to connect to your MongoDB cluster. These instructions are stored in the connection string, which includes information on the hostname or IP address and port of your cluster, authentication mechanism, credentials where applicable, and other connection options.
+The MongoDB Go driver needs instructions on where and how to connect to your MongoDB cluster. These instructions are stored in the connection string, which includes information on the hostname or IP address and port of your cluster, authentication mechanism, credentials where applicable, and other connection options. We can interact with the MongoDB shell in the MongoDB server with the command `mongosh`, see [here](https://www.mongodb.com/docs/manual/reference/method/) for a list of mongosh methods or just type `help` when you're inside the shell. For example I would first chose the db `use Course`, then `show collections` to show collections in this db, copy the name of collection you want to interact with, in this example I'll use the table called "Assignations", then `db.Assignations.find()` to display all the documents inside a collection. Mongo is a document-oriented database, as opposed to relational databases it stores the information in Json formats, this makes it incredibly flexible to the point it is either a pro or a con if not handled carefully. Here is a terms mapping from relational databases tp Mongo document-oriented data base
+
+| Relational DB | MongoDB(Document-oriented DB) |
+| ------------- | ----------------------------- |
+| Database      |          Database             |
+| Table         |          Collection           |
+| Row           |          Document             |
+| Column        |          Field                |
+
+In our case we just need to start a MongoDB server, while developing you can do that using Docker but we will do this using Kubernetes when deploying the app. Once it is started we can just talk to it using the client, at this moment no Database exists yet other than the default one called "test" so in order to create one just start making queries, if you do a create query of a document to a db and collection that doesn't exist the db and collection will be created ant the document will be stored in it.
 
 https://www.mongodb.com/docs/drivers/go/current/
 https://www.mongodb.com/resources/languages/golang
@@ -179,8 +269,9 @@ https://www.mongodb.com/docs/drivers/go/current/quick-start/  # quick start
 https://www.mongodb.com/resources/products/compatibilities/docker  # docker get started
 https://github.com/mongodb/mongo-go-driver/blob/master/mongo/database.go#L48  # documentation
 running mongodb as a microservice with docker and Kubernetes # navigator search
+https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo
 
-docker run --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server:7.0.6-ubi9
+docker run -it --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server:7.0.6-ubi9 mongosh
 
 ## Install gcloud CLI and Kubectl
 I followed [this documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) to install kubectl. I used the [official documentation](https://cloud.google.com/sdk/docs/install) and [this guide](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) to install "gcloud CLI", this is a [gcloud CLI cheat sheet](https://cloud.google.com/sdk/docs/cheatsheet).
@@ -193,7 +284,7 @@ We need a DNS to configure Harbor in next step
 
 1. Follow [this guide](https://cloud.google.com/dns/docs/set-up-dns-records-domain-name)
 
-## Setting up Harbor
+## Setting up Harbor(Not good, it had to be installed in kubernetes)
 I will follow the [official documentation](https://goharbor.io/docs/2.12.0/install-config/)
 
 
@@ -258,6 +349,56 @@ I will follow the [official documentation](https://goharbor.io/docs/2.12.0/insta
 15. Now in Harbor's "projects" view find "Repositories" tab and to the right a button with the name "PUSH COMMAND" find the ones you might need there. For example to tag an image for example an image I created called "juan503/kafka_client" we retag it with a different name with `docker tag juan503/kafka_client:latest 35.223.33.184.nip.io/sopes1/kafka_client:latest` and then push it `docker push `35.223.33.184.nip.io/sopes1/kafka_client:latest` then I can pull it up anywhere if I'm logged in to the registry with `docker pull 35.223.33.184.nip.io/sopes1/kafka_client:latest`
 
 16. (Optional) if you even need to restart Harbor or reconfigure Docker on your computer. Follow [this guide](https://goharbor.io/docs/1.10/install-config/run-installer-script/#connect-http) to restart both and remember to do the `daemon.json` docker configurations
+
+## Setting up Kubernetes
+
+### Create a Kubernetes Cluster in GCP
+
+
+### Install Helm
+Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
+
+
+### Setting up Harbor(In kubernetes)
+Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/) 
+
+1. `helm repo add harbor https://helm.goharbor.io`
+
+2. `helm fetch harbor/harbor --untar`, this generates a Harbor directory with the "values.yml" file
+
+3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to false. In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`.
+
+4. `helm install harbor harbor -n project`, check harbor is installed by checking it pods `kubectl get pods -n project`, `kubectl get services -n project`, `kubectl get pvc -n project`
+
+4. We have to create the ingress controller
+
+#### Set up a Nginx Controller using Helm
+Following [this documentation](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) will direct you [here](https://kubernetes.github.io/ingress-nginx/deploy/). We will use this controller to be able to expose the cluster with a DNS address and direct traffic to a Kubernetes object called Ingress, the controller is a load balancer. It only allows http and https traffic through port 80 and 443. We are basically following the sintax in [this section](https://kubernetes.github.io/ingress-nginx/deploy/#ovhcloud)
+
+# 1. `kubectl apply -f https://raw.githubusercontent.com/nginxinc/kubernetes-ingress/v4.0.0/deploy/crds.yaml`: Installs CRDs
+# 2. (optional) `kubectl delete -f crds/`: If you need to uninstall CRDs
+
+1. `helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx`: adds a repo to helm, it is similar to adding a source in Ubuntu's advanced package tool(apt), which is the Ubuntu's package manager
+
+2. `helm repo update`
+
+3. `helm install nginx-ingress ingress-nginx/ingress-nginx -n project`: Installs controller, basically this command means the following `helm install <give_installation_a_name> <repo_name>/<file_in_repo_name> -n <name_space_in_which_to_install_it>`. When installation ends you'll get an exammple copy that and paste it in a YAML file
+
+4. `kubectl get ingressclass`: shows ingress controller info
+
+5. Get the ingress contorller's External-IP/public IP with command `kubectl get svc -n project` and append `.nip.io` to the end if you want to know how this works check [their website](https://nip.io/), this will simulate a DNS for our IP address. then paste this in the `host` label of your YAML file. My external-ip address is `34.58.126.96`
+
+6. Using [this](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation) and [this documentation](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation)
+
+7. With the same external-ip address we now will create a local DNS, I'm windows, but is very similar in Unix systems. My external IP is `34.58.126.96`, Open `hosts` that lives in this address `C:\Windows\System32\drivers\etc` and paste `34.58.126.96 core.harbor.sopes`
+
+### Create Harbor Project
+
+1. Login with default user `admin` with default password `Harbor12345` you could have also change that in the `values.yml` file in previous sections. Change password to `952-WOp0m$7t`
+
+2, Create a user with name `sopes1`, email `bouquet.zoom.6h@icloud.com`, fist/last name `sopes uno`, password `952-WOp0m$7t`
+
+3. Create project called `sopes1`, leave it private, and in the members tab inside the project add the user we just created `sopes1` as administrator
  
 ## Configure ORAS
 Registries are evolving as generic artifact stores. ORAS is a technology that lets us create OCI artifacts and push and pull them form OCI registries. I followed the [official documentation](https://oras.land/docs/installation/) to install it, produce an OCI artifact from the JSON file containing the courses/assignations information to push it to our Harbor registry and then consume it from locust
@@ -274,12 +415,12 @@ Registries are evolving as generic artifact stores. ORAS is a technology that le
 4. In our set up the https certificate does not handle TLS certificates as it is not configured in a cloud provider so we need to do something similar as we did with Docker. In this case we need to see the [following guide](https://oras.land/docs/compatible_oci_registries/#using-a-plain-http-docker-registry) which explains how to interact with http registries(AKA insecure registries). Basicallly to any pull, push or login command append the `--insecure` flag
 
 
-5. Login to oras using the registry `oras login [flags] <registry>` so in my case I will do a `oras login 35.223.33.184.nip.io --insecure -u sopes1` and enter password "!\09IZbZ$3pC". I can also do the plain http `oras login 35.223.33.184 --insecure -u sopes1`
+5. Login to oras using the registry `oras login [flags] <registry>` so in my case I will do a `oras login 35.223.33.184.nip.io --insecure -u sopes1` and enter password "!\09IZbZ$3pC". I can also do the plain http `oras login 35.223.33.184 --insecure -u sopes1`. (alternative) `oras login core.harbor.sopes --insecure -u sopes1` with password `952-WOp0m$7t`
 
 
-6. The first thing we will push to Harbor in an OCI format is the json file in the locust directory. `oras push --insecure 35.223.33.184.nip.io/sopes1/courses:latest courses.json`. This command could repacle `--insecure` tag with the `--plain-http` tag and push it using the IP address `oras push --insecure 35.223.33.184/sopes1/courses:latest courses.json`
+6. The first thing we will push to Harbor in an OCI format is the json file in the locust directory. `oras push --insecure 35.223.33.184.nip.io/sopes1/courses:latest courses.json`. This command could repacle `--insecure` tag with the `--plain-http` tag and push it using the IP address `oras push --insecure 35.223.33.184/sopes1/courses:latest courses.json`. (alternative) `oras push --insecure core.harbor.sopes/sopes1/courses:latest courses.json` 
 
-7. To test this we could delete the json file and then run `oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest`
+7. To test this we could delete the json file and then run `oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest`. (alternative) `oras pull --insecure core.harbor.sopes/sopes1/courses:latest`
 
 ## Containerizing applications(Dockerizing Applications)
 
@@ -293,26 +434,8 @@ This is a list of the ports that our images are exposing. Be aware I had to buil
 
 
 
-## Setting up Kubernetes
-
-### Create a Kubernetes Cluster in GCP
 
 
-
-### Install Helm
-Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
-
-### Set up a Nginx Controller using Helm
-Following [this documentation](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) will direct you [here](https://kubernetes.github.io/ingress-nginx/deploy/). We will use this controller to be able to expose the cluster with a DNS address and direct traffic to a Kubernetes object called Ingress, the controller is a load balancer. It only allows http and https traffic through port 80 and 443. We are basically following the sintax in [this section](https://kubernetes.github.io/ingress-nginx/deploy/#ovhcloud)
-
-# 1. `kubectl apply -f https://raw.githubusercontent.com/nginxinc/kubernetes-ingress/v4.0.0/deploy/crds.yaml`: Installs CRDs
-# 2. (optional) `kubectl delete -f crds/`: If you need to uninstall CRDs
-1. `helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx`: adds a repo to helm, it is similar to adding a source in Ubuntu's advanced package tool(apt), which is the Ubuntu's package manager
-2. `helm repo update`
-3. `helm install nginx-ingress ingress-nginx/ingress-nginx -n project`: Installs controller, basically this command means the following `helm install <give_installation_a_name> <repo_name>/<file_in_repo_name> -n <name_space_in_which_to_install_it>`. When installation ends you'll get an exammple copy that and paste it in a YAML file
-4. `kubectl get ingressclass`: shows ingress controller info
-5. Get the ingress contorller's External-IP/public IP with command `kubectl get svc -n project` and append `.nip.io` to the end if you want to know how this works check [their website](https://nip.io/), this will simulate a DNS for our IP address. then paste this in the `host` label of your YAML file
-6. Using [this](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation) and [this documentation](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation)
 
 In the cluster configuration in GCP in the networks section remove "enable authorized networks"
 We can use Lens k8
@@ -321,6 +444,9 @@ mongo and redis doesn't have to be exposed they can be just set up with a port f
 
 
 `kubectl config set-context --current --namespace=<namespace_name>`
+
+## Set up Grafana
+`docker run -d --name=grafana -p 3000:3000 grafana/grafana`
 
 
 GRPC_CLIENT_HOST=<kubernetesObjectTag>
