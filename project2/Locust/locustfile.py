@@ -18,7 +18,8 @@ class PostCoursesTest(HttpUser):
       time.sleep(0.3)
 
   def on_start(self):
-    os.system('oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest')
+    #os.system('oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest')
+    os.System('oras pull --insecure core.harbor.sopes/sopes1/courses:latest')
     print("task started")
 
   def on_stop(self):
