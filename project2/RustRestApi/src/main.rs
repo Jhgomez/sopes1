@@ -41,6 +41,98 @@ async fn course(course: web::Json<Course>) -> impl Responder {
         }
     };
 
+
+
+    // Check if json keys exists
+
+    // ** region intialization ** //
+    if let Err(_) = con
+        .json_obj_keys::<&str, &str, ()>("region", "$")
+        .await
+    {
+
+        let region = json!({"METROPOLITANA":[], "NORTE":[], "NORORIENTAL":[], "SURORIENTAL":[], "CENTRAL":[], "SUROCCIDENTAL":[], "NOROCCIDENTAL":[], "PETEN":[]});
+        
+
+        if let Err(e) = con
+        .json_set::<&str, &str, serde_json::Value, ()>("region", "$", &region)
+        .await
+        {
+            return HttpResponse::InternalServerError()
+                .body(format!("Error starting region json: {}", e));
+        };
+
+
+        println!("iniciamos regiones");
+    };
+    
+    // ** facultad intialization ** //
+    if let Err(_) = con
+        .json_obj_keys::<&str, &str, ()>(&course.facultad, "$")
+        .await
+    {
+        let init_val;
+
+        match course.facultad.as_str() {
+            "Ingenieria" =>{ 
+                init_val = json!({"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]});
+                println!("iniciamos ingenieria");
+            },
+
+            "Medicina" => {
+                init_val = json!({"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]});
+                println!("iniciamos medicina");
+            },
+            _ => {
+                init_val = json!({});
+                println!("iniciamos facultad default");
+            },
+        }
+
+        if let Err(e) = con
+        .json_set::<&str, &str, serde_json::Value, ()>(&course.facultad, "$", &init_val)
+        .await
+        {
+            return HttpResponse::InternalServerError()
+                .body(format!("Error starting region json: {}", e));
+        };
+    };
+
+    // ** Courses intialization ** //
+    if let Err(_) = con
+        .json_obj_keys::<&str, &str, ()>(&course.curso, "$")
+        .await
+    {
+        let init_val;
+
+        match course.facultad.as_str() {
+            "Ingenieria" =>{ 
+                init_val = json!({"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]});
+                println!("iniciamos ingenieria cursos");
+            },
+
+            "Medicina" => {
+                init_val = json!({"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]});
+                println!("iniciamos medicina cursos");
+            },
+            _ => {
+                init_val = json!({});
+                println!("iniciamos cursos default");
+            },
+        }
+
+        if let Err(e) = con
+        .json_set::<&str, &str, serde_json::Value, ()>(&course.curso, "$", &init_val)
+        .await
+        {
+            return HttpResponse::InternalServerError()
+                .body(format!("Error starting region json: {}", e));
+        };
+    };
+
+
+
+
     // let course_json = match serde_json::to_string(&course) {
     //     Ok(j) => j,
     //     Err(e) => return HttpResponse::InternalServerError().body(format!("Error parssing back to json: {}", e))
@@ -72,13 +164,13 @@ async fn course(course: web::Json<Course>) -> impl Responder {
     };
 
 
-    if let Err(e) = con
-        .json_set::<&str, &str, web::Json<Course>, ()>("asignacion", "$", &course)
-        .await
-    {
-        return HttpResponse::InternalServerError()
-            .body(format!("Error setting json to redis: {}", e));
-    };
+    // if let Err(e) = con
+    //     .json_set::<&str, &str, web::Json<Course>, ()>("asignacion", "$", &course)
+    //     .await
+    // {
+    //     return HttpResponse::InternalServerError()
+    //         .body(format!("Error setting json to redis: {}", e));
+    // };
 
     if let Err(e) = con
         .json_arr_append::<&str, String, web::Json<Course>, ()>("region", format!("$.{}", &course.region), &course)
