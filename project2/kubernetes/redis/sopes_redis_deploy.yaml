@@ -21,7 +21,7 @@ spec:
       containers:
       - image: redis:8.0-M02-alpine3.20
         name: redis
-        resources: 
+        resources:
           requests:
             memory: "32Mi"
             cpu: "125m"
