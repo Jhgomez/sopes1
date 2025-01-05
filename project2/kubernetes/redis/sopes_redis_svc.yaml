@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
   creationTimestamp: null
   labels:
@@ -7,27 +7,12 @@ metadata:
   name: sopesredis
   namespace: project
 spec:
-  replicas: 1
+  ports:
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
   selector:
-    matchLabels:
-      app: sopesredis
-  strategy: {}
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: sopesredis
-    spec:
-      containers:
-      - image: redis:8.0-M02-alpine3.20
-        name: redis
-        resources:
-          requests:
-            memory: "32Mi"
-            cpu: "125m"
-          limits:
-            memory: "64Mi"
-            cpu: "250m"
-        ports:
-        - containerPort: 6379
-status: {}
+    app: sopesredis
+  type: ClusterIP
+status:
+  loadBalancer: {}
