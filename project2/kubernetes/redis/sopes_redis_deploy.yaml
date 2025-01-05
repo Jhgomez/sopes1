@@ -23,10 +23,10 @@ spec:
         name: redis
         resources:
           requests:
-            memory: "32Mi"
+            memory: "100Mi"
             cpu: "125m"
           limits:
-            memory: "64Mi"
+            memory: "200Mi"
             cpu: "250m"
         ports:
         - containerPort: 6379
