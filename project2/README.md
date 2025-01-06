@@ -141,7 +141,7 @@ RUST_REDIS_HOST=<kubernetesObjectTag>
 
 5. I can test it using Docker. I'm going to create a Redis database Docker container using the Bitmani's image, see [here](https://hub.docker.com/r/bitnami/redis) for info on how to set it up. Basically, assuming you have docker desktop installed and running, run bellow command(6379 is default port). optionally you can use the official [redis alpine version](https://github.com/docker-library/docs/tree/master/redis) with the image `redis:8.0-M02-alpine3.20`, the volume would be `-v /docker/host/dir:/data`
 ```bash
-docker run --rm -d -it \
+docker run -rm -d -it \
     --name=redis-server \
     -v redis-persistence:/data \
     -e REDIS_PASSWORD=course -e REDIS_MASTER_PASSWORD=course   \
@@ -250,7 +250,7 @@ cd /opt/kafka/bin/ # move to folder where Kafka is installed
 Start your servers and send traffic to them using Locust in the Locust section
 
 ###### Add MongoDB client
-The MongoDB Go driver needs instructions on where and how to connect to your MongoDB cluster. These instructions are stored in the connection string, which includes information on the hostname or IP address and port of your cluster, authentication mechanism, credentials where applicable, and other connection options. We can interact with the MongoDB shell in the MongoDB server with the command `mongosh`, see [here](https://www.mongodb.com/docs/manual/reference/method/) for a list of mongosh methods or just type `help` when you're inside the shell. For example I would first chose the db `use Course`, then `show collections` to show collections in this db, copy the name of collection you want to interact with, in this example I'll use the table called "Assignations", then `db.Assignations.find()` to display all the documents inside a collection. Mongo is a document-oriented database, as opposed to relational databases it stores the information in Json formats, this makes it incredibly flexible to the point it is either a pro or a con if not handled carefully. Here is a terms mapping from relational databases tp Mongo document-oriented data base
+The MongoDB Go driver needs instructions on where and how to connect to your MongoDB cluster. These instructions are stored in the connection string, which includes information on the hostname or IP address and port of your cluster, authentication mechanism, credentials where applicable, and other connection options. We can interact with the MongoDB shell in the MongoDB server with the command `mongosh`, see [here](https://www.mongodb.com/docs/manual/reference/method/) for a list of mongosh methods or just type `help` when you're inside the shell. For example I would first chose the db `use Course`, then `show collections` to show collections in this db, copy the name of collection you want to interact with, in this example I'll use the table called "Assignations", then `db.Assignations.find()` to display all the documents inside a collection. Mongo is a document-oriented database, as opposed to relational databases it stores the information in Json formats, this makes it incredibly flexible to the point it is either a pro or a con if not handled carefully. Here is a terms mapping from relational databases tp Mongo document-oriented data base. Clear database `db.dropDatabase()`
 
 | Relational DB | MongoDB(Document-oriented DB) |
 | ------------- | ----------------------------- |
@@ -271,7 +271,12 @@ https://github.com/mongodb/mongo-go-driver/blob/master/mongo/database.go#L48  # 
 running mongodb as a microservice with docker and Kubernetes # navigator search
 https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo
 
-docker run -it --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server:7.0.6-ubi9 mongosh
+docker run -it --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server:7.0.6-ubi9           mongosh
+
+or
+
+docker run --name mongo -d -p 27017:27017 mongo:8.0.4
+
 
 ## Install gcloud CLI and Kubectl
 I followed [this documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) to install kubectl. I used the [official documentation](https://cloud.google.com/sdk/docs/install) and [this guide](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) to install "gcloud CLI", this is a [gcloud CLI cheat sheet](https://cloud.google.com/sdk/docs/cheatsheet).
@@ -350,6 +355,19 @@ I will follow the [official documentation](https://goharbor.io/docs/2.12.0/insta
 
 16. (Optional) if you even need to restart Harbor or reconfigure Docker on your computer. Follow [this guide](https://goharbor.io/docs/1.10/install-config/run-installer-script/#connect-http) to restart both and remember to do the `daemon.json` docker configurations
 
+
+## Containerizing applications(Dockerizing Applications)
+
+Here is a very interesting [document](https://www.michalklempa.com/2023/03/combining-docker-images/) explaining what multi-layer docker images are and how we can inspect images further. `docker history --no-trunc=true <image_name> > <file_name>`, this gets the docker command history written into the file name given. `docker run --entrypoint '' --rm -it <image_name> /bin/sh`: This could helps us debug an image, basically we pass an empty entry point and then we execute the shell with the last command `/bin/sh` it could be /bin/bash`, after this we could try things like get the file address of a binary like `which curl` or `which java`, etc. To build all images I went to through their official repo
+
+### List of containers ports
+This is a list of the ports that our images are exposing. Be aware I had to build my gRPC client image with the following code `docker build -f client/Dockerfile -t grpc_client .`
+
+1. gRPC client: 8000
+2. 
+
+
+
 ## Setting up Kubernetes
 
 ### Create a Kubernetes Cluster in GCP
@@ -366,9 +384,11 @@ Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/
 
 2. `helm fetch harbor/harbor --untar`, this generates a Harbor directory with the "values.yml" file
 
-3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to false. In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`.
+3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to false. In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`. You'll access with `https://core.harbor.sopes` later
 
 4. `helm install harbor harbor -n project`, check harbor is installed by checking it pods `kubectl get pods -n project`, `kubectl get services -n project`, `kubectl get pvc -n project`
+
+5. Do `docker logout` if you're logged in to your docker account and then loging to docker `docker login core.harbor.sopes -u sopes1` with password `952-WOp0m$7t`
 
 4. We have to create the ingress controller
 
@@ -399,6 +419,88 @@ Following [this documentation](https://kubernetes.io/docs/concepts/services-netw
 2, Create a user with name `sopes1`, email `bouquet.zoom.6h@icloud.com`, fist/last name `sopes uno`, password `952-WOp0m$7t`
 
 3. Create project called `sopes1`, leave it private, and in the members tab inside the project add the user we just created `sopes1` as administrator
+
+
+### Create deployments
+All will follow a similar process, create the yaml file to run configurations from this file. check the pods are healthy. Create the service that will expose the deployment objects inside the cluster and namespace most of it will be a ClusterIP
+
+#### Redis
+
+1. Start the base configurations with command below and then define the container port and container resource limits
+```yaml
+`kubectl create deployment sopesredis --replicas=1 --image=redis:8.0-M02-alpine3.20 --dry-run -o yaml > sopes_redis.yaml`
+```
+
+2. `kubectl get pods -n project`
+
+3. `kubectl expose deployment sopesredis -n project --port=6379 --target-port=6379 --type=ClusterIP --dry-run -o yaml > sopes_redis_svc.yaml`, check the services exists `kubectl get svc -n project`
+
+4. `kubectl autoscale deployment sopesredis -n project --min=1 --max=3 --cpu-percent=50 --dry-run -o yaml > sopes_redis_hpa.yaml` add the HPA(horizontal pod autoscaler). make sure it has the namespace in the metadata section. , checkt the hpa exists `kubectl get hpa -n project`
+
+5. `kubectl exec -it <pod_name> -n project -- redis-cli`
+
+#### Mongo
+
+1. Create a Persitent Volume Claim, find the documentation. WE just need a basic set up, it will be an opaque storage claim
+
+2. You will see this pending when doing a `kubectl get pvc -n project`, if you do a `kubectl describe pvc -n project` or `kubectl describe pvc/mongo-pvc -n project` or `kubectl logs pvc/mongo-pvc -n project`
+
+3. Start the base configurations with command below and then define the container port and container resource limits
+```yaml
+`kubectl create deployment sopesmongo -n project --replicas=1 --image=mongo:8.0.4 --dry-run -o yaml > sopesmongo.yaml`
+```
+
+4. `kubectl expose deployment sopesmongo -n project --port=27017 --target-port=27017 --type=ClusterIP --dry-run -o yaml > sopes_mongo_svc.yaml`, check the services exists `kubectl get svc -n project` 
+
+5 `kubectl autoscale deployment sopesmongo -n project --min=1 --max=3 --cpu-percent=50 --dry-run -o yaml > sopes_mongo_hpa.yaml` add the HPA(horizontal pod autoscaler). make sure it has the namespace in the metadata section. , checkt the hpa exists `kubectl get hpa -n project`
+
+6. Run mongosh, enter CLI `kubectl exec -it sopesmongo-<id> -n project -- bin/sh`
+
+#### Install Kafka Broker using Strimzi
+Follow [this](https://strimzi.io/quickstarts/) simple guide
+
+kubectl create -f 'https://strimzi.io/install/latest?namespace=project' -n project
+
+
+kubectl apply -f https://strimzi.io/examples/latest/kafka/kraft/kafka-single-node.yaml -n kafka
+
+kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka 
+
+quay.io/strimzi/operator:latest
+
+`kubectl get strimzi -o name` : Listing all resource types and names
+`kubectl -n project delete $(kubectl get strimzi -o name -n project)`: delete cluster
+`kubectl delete pvc -l strimzi.io/name=my-cluster-kafka -n project`: delete cluster persistent volume claim
+`kubectl -n kafka delete -f 'https://strimzi.io/install/latest?namespace=project'`: delete operator
+`kubectl get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}{"\n"}'` tls can be plain: get address to connect to cluster mine is `my-cluster-kafka-bootstrap.project.svc:9092` if not `my-kafka-bootstrap-address:9092`
+
+#### Kakfa Client
+
+1. Start the base configurations with command below and then define the container port and container resource limits
+```yaml
+`kubectl create deployment sopeskafkaclient --replicas=1 --image=juan523/kafkaclient --dry-run -o yaml > sopes_kafa.yaml`
+```
+
+2. `kubectl get pods -n project`
+
+3. `kubectl autoscale deployment sopeskafkaclient -n project --min=1 --max=3 --cpu-percent=50 --dry-run -o yaml > sopes_kafka_hpa.yaml` add the HPA(horizontal pod autoscaler). make sure it has the namespace in the metadata section. , checkt the hpa exists `kubectl get hpa -n project`
+
+5. `kubectl exec -it <pod_name> -n project -- bin/sh`
+
+#### Main Deployment (gRPC server and client and Rust redis client)
+
+1. Start the base configurations with command below and then define the container port and container resource limits
+```yaml
+`kubectl create deployment d-api-rest-grpc -n project --replicas=1 --image=juan523/clientgrpc --dry-run -o yaml > sopes_deploy.yaml`
+```
+
+4. `kubectl expose deployment d-api-rest-grpc -n project --port=80 --target-port=8100 --type=ClusterIP --dry-run -o yaml > sopes_deploy_svc.yaml`, check the services exists `kubectl get svc -n project` 
+
+5 `kubectl autoscale deployment d-api-rest-grpc -n project --min=1 --max=3 --cpu-percent=50 --dry-run -o yaml > sopes_deploy_hpa.yaml` add the HPA(horizontal pod autoscaler). make sure it has the namespace in the metadata section. , checkt the hpa exists `kubectl get hpa -n project`
+
+6. `kubectl describe pod d-api-rest-grpc-adfasd -n project` to get messages of other pods, or log `kubectl logs d-api-rest-grpc-67975b94b9-clmbh -n project`
+
+Run mongosh, enter CLI `kubectl exec -it sopesmongo-<id> -n project -- bin/sh`
  
 ## Configure ORAS
 Registries are evolving as generic artifact stores. ORAS is a technology that lets us create OCI artifacts and push and pull them form OCI registries. I followed the [official documentation](https://oras.land/docs/installation/) to install it, produce an OCI artifact from the JSON file containing the courses/assignations information to push it to our Harbor registry and then consume it from locust
@@ -422,15 +524,6 @@ Registries are evolving as generic artifact stores. ORAS is a technology that le
 
 7. To test this we could delete the json file and then run `oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest`. (alternative) `oras pull --insecure core.harbor.sopes/sopes1/courses:latest`
 
-## Containerizing applications(Dockerizing Applications)
-
-Here is a very interesting [document](https://www.michalklempa.com/2023/03/combining-docker-images/) explaining what multi-layer docker images are and how we can inspect images further. `docker history --no-trunc=true <image_name> > <file_name>`, this gets the docker command history written into the file name given. `docker run --entrypoint '' --rm -it <image_name> /bin/sh`: This could helps us debug an image, basically we pass an empty entry point and then we execute the shell with the last command `/bin/sh` it could be /bin/bash`, after this we could try things like get the file address of a binary like `which curl` or `which java`, etc. To build all images I went to through their official repo
-
-### List of containers ports
-This is a list of the ports that our images are exposing. Be aware I had to build my gRPC client image with the following code `docker build -f client/Dockerfile -t grpc_client .`
-
-1. gRPC client: 8000
-2. 
 
 
 
@@ -464,6 +557,7 @@ KAFKA_SERVER_PORT=9092
 # this is the redis_client:
 RUST_SERVER_HOST=<kubernetesObjectTag>
 RUST_SERVER_PORT=8020
+
 RUST_REDIS_HOST=<kubernetesObjectTag>
 RUST_REDIS_PORT=6379
 
@@ -486,3 +580,27 @@ export MONGO_SERVER_HOST=localhost \
 export MONGO_SERVER_PORT=27017
 ```
 
+        env:
+          - name: SPRING_PROFILES_INCLUDE
+            value: "kubernetes"
+          - name: SPRING_PROFILES_INCLUDE
+            value: "kubernetes"
+          - name: SPRING_PROFILES_INCLUDE
+            value: "kubernetes"
+          - name: SPRING_PROFILES_INCLUDE
+            value: "kubernetes"
+          - name: SPRING_PROFILES_INCLUDE
+            value: "kubernetes"
+          - name: SPRING_PROFILES_INCLUDE
+            value: "kubernetes"
+          - name: SPRING_PROFILES_INCLUDE
+            value: "kubernetes"
+
+curl http://localhost:8000/course \
+    --include \
+    --header "Content-Type: application/json" \
+    --request "POST" \
+    --data '{"curso": "ANP", "facultad": "Ingenieria", "carrera": "Civil", "region": "METROPOLITANA"}'
+
+
+-e GRPC_CLIENT_HOST=localhost -e GRPC_CLIENT_PORT=8000 -e GIN_MODE=release -e GRPC_SERVER_HOST=localhost -e GRPC_SERVER_PORT=8010 -e KAFKA_SERVER_HOST=localhost -e KAFKA_SERVER_PORT=9092 -e RUST_SERVER_HOST=localhost -e RUST_SERVER_PORT=8020 -e RUST_REDIS_HOST=localhost -e RUST_REDIS_PORT=6379 -e MONGO_SERVER_HOST=localhost -e MONGO_SERVER_PORT=27017
