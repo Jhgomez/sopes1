@@ -961,7 +961,7 @@ RUN mv oras-install/oras /usr/local/bin/
 RUN rm -rf oras_${VERSION}_*.tar.gz oras-install/
 ```
 
-* build the image `docker build -t <user>/<name/tag>`
+* build the image `docker build -t <user>/<name/tag> .`
 * push image `docker push <user>/<name>`
 * From the prev commands we can see that the deployment file will change, the image will not be the oras image we used in previous class
 
@@ -1470,3 +1470,5 @@ Cloud native Guatemala official community https://community.cncf.io/cloud-native
 * `kubectl get all <-n <namespace_name>>(this is optional)`: returns all objects in a optionally specified namespace if not it could be the default or global namespace objects that will be returned
 * `kubectl get nodes`: returns kuberentes nodes names
 * `kubectl get nodes -o wide`: returns kuberentes nodes info like IP
+
+Service "project/d-api-rest-grpc" does not have any active Endpoint
