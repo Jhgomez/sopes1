@@ -377,7 +377,7 @@ This is a list of the ports that our images are exposing. Be aware I had to buil
 Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
 
 
-### Setting up Harbor(In kubernetes)
+### Setting up Harbor(In Kubernetes cluster)
 Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/) 
 
 1. `helm repo add harbor https://helm.goharbor.io`
@@ -604,3 +604,124 @@ curl http://localhost:8000/course \
 
 
 -e GRPC_CLIENT_HOST=localhost -e GRPC_CLIENT_PORT=8000 -e GIN_MODE=release -e GRPC_SERVER_HOST=localhost -e GRPC_SERVER_PORT=8010 -e KAFKA_SERVER_HOST=localhost -e KAFKA_SERVER_PORT=9092 -e RUST_SERVER_HOST=localhost -e RUST_SERVER_PORT=8020 -e RUST_REDIS_HOST=localhost -e RUST_REDIS_PORT=6379 -e MONGO_SERVER_HOST=localhost -e MONGO_SERVER_PORT=27017
+
+
+
+* Google sign in is now FedCM(federated credential management)
+
+* Admission webhooks, or webhooks in Kubernetes, are a type of admission controller, which can be used in Kubernetes clusters to validate or mutate requests to the control plane prior to a request being persisted.
+
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  -n project
+
+### Uninstall Nginx-controller completely
+To completely delete Nginx-controller from a Kubernetes cluster delete all nodes in of the following types called `ingress-nginx`
+
+pod
+svc
+deployment
+clusterrolebinding
+clusterrole
+IngressClass
+ValidatingWebhookConfiguration
+
+
+
+
+kubectl create ingress -s -n project --dry-run -o yaml > ingress.yaml
+
+
+# Create a single ingress called 'simple' that directs requests to foo.com/bar to svc
+  # svc1:8080 with a TLS secret "my-cert"
+  kubectl create ingress simple --rule="foo.com/bar=svc1:8080,tls=my-cert"
+
+  # Create a catch all ingress of "/path" pointing to service svc:port and Ingress Class as "otheringress"
+  kubectl create ingress catch-all --class=otheringress --rule="/path=svc:port"
+
+  # Create an ingress with two annotations: ingress.annotation1 and ingress.annotations2
+  kubectl create ingress annotated --class=default --rule="foo.com/bar=svc:port" \
+  --annotation ingress.annotation1=foo \
+  --annotation ingress.annotation2=bla
+
+  # Create an ingress with the same host and multiple paths
+  kubectl create ingress multipath --class=default \
+  --rule="foo.com/=svc:port" \
+  --rule="foo.com/admin/=svcadmin:portadmin"
+
+  # Create an ingress with multiple hosts and the pathType as Prefix
+  kubectl create ingress ingress1 --class=default \
+  --rule="foo.com/path*=svc:8080" \
+  --rule="bar.com/admin*=svc2:http"
+
+  # Create an ingress with TLS enabled using the default ingress certificate and different path types
+  kubectl create ingress ingtls --class=default \
+  --rule="foo.com/=svc:https,tls" \
+  --rule="foo.com/path/subpath*=othersvc:8080"
+
+  # Create an ingress with TLS enabled using a specific secret and pathType as Prefix
+  kubectl create ingress ingsecret --class=default \
+  --rule="foo.com/*=svc:8080,tls=secret1"
+
+  # Create an ingress with a default backend
+  kubectl create ingress ingdefault --class=default \
+  --default-backend=defaultsvc:http \
+  --rule="foo.com/*=svc:8080,tls=secret1"
+
+
+kubectl create deployment gotest-d --image=juan523/gotest --port=8000 --dry-run -o yaml > deploy.yaml
+
+kubectl expose deployment gotest-d
+
+kubectl expose deployment gotest-d --name=gotest-s --port=80 --target-port=8000 -n project --dry-run -o yaml > service.yaml
+
+kubectl create ingress goingress --class=default --rule="foo.com/path*=svc:8080" --dry-run -o yaml > ingress.yaml
+
+curl http://34.57.250.18.nip.io/course \
+    --include \
+    --header "Content-Type: application/json" \
+    --request "POST" \
+    --data '{"curso": "ANP", "facultad": "Ingenieria", "carrera": "Civil", "region": "METROPOLITANA"}'
+
+
+install certmanager
+I'll do what they call a static installation, you can modify this installation files or do a helm installation, using [this guide](https://cert-manager.io/docs/installation/). cert-manager mainly uses two different custom Kubernetes resources - known as CRDs - to configure and control how it operates, as well as to store state. These resources are Issuers and Certificates. We can see it is important to [use same namespace in this resources](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/#issuers). Issuers are namespace specific but if using ClusterIssuer(cluster wide), remember to update the Ingress annotation cert-manager.io/issuer to cert-manager.io/cluster-issuer
+
+* `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml`
+
+[create an issuer using this instructions](https://cert-manager.io/docs/tutorials/getting-started-with-cert-manager-on-google-kubernetes-engine-using-lets-encrypt-for-ingress-ssl/#7-create-an-issuer-for-lets-encrypt-staging)
+
+[create a secrete](https://cert-manager.io/docs/tutorials/getting-started-with-cert-manager-on-google-kubernetes-engine-using-lets-encrypt-for-ingress-ssl/#8-re-configure-the-ingress-for-ssl) of tls type with empty values
+
+update the harbor "values.yaml" file to use the secret name we created in previous step `expose.tls.secret.secretName`. also include the domain name of your choice in `expose.ingress.hosts`, also `externalURL` to use the same domain when calling https. We actually will not buy a domain nor set up a DNS instead we are aiming to generate the certificates using certmanager and do a local DNS in our computers
+
+
+34.57.250.18 core.harbor.sopes
+
+
+kubectl create secret tls hello-app-tls \
+    --namespace dev \
+    --key server.key \
+    --cert server.crt \
+    --dryk-run \
+    -0 yaml > setest.yaml
+
+
+* `curl -kivL -H 'Host: core.harbor.sopes' 'http://34.57.250.18'`: this curl command will provide verbose output, following any redirects, show the TLS headers in the output, and not error on insecure certificates. With ingress-nginx-controller, the service will be available with a TLS certificate, but it will be using a self-signed certificate provided as a default from the ingress-nginx-controller
+
+* If you want to download and look at the files for a published chart, without installing it, you can do so with helm pull chartrepo/chartname 
+
+## Uninstalling Cert-manager
+Check [this guide[(https://cert-manager.io/docs/installation/kubectl/#uninstalling)
+
+* `kubectl describe certificate -n cert-manager-test`
+
+
+* `--all-namespaces`: this can be used with any delete or get action
+* `--edit`: We can use this option before a `-f` option for example when creating from a file either from the internet or local
+
+
+* An S/MIME certificate is a digital certificate used to secure email communication1. It verifies your identity to recipients and ensures that your messages remain private and integral.
+
+
+golang goa vs openapi(code generator/design first APIs) an alternative to code first libraries like gin or gorilla
