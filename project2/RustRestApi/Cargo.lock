@@ -1373,6 +1373,7 @@ dependencies = [
  "actix-web",
  "redis",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
