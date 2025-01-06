@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: d-api-rest-grpc
+  name: d-api-rest-grpc
+  namespace: project
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: d-api-rest-grpc
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: d-api-rest-grpc
+    spec:
+      containers:
+      - image: juan523/clientgrpc
+        name: clientgrpc
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "120Mi"
+            cpu: "150m"
+          limits:
+            memory: "310Mi"
+            cpu: "300m"
+        env:
+          - name: GRPC_CLIENT_HOST
+            value: "0.0.0.0"
+          - name: GRPC_CLIENT_PORT
+            value: "8000"
+          - name: GRPC_SERVER_HOST
+            value: "servergrpc"
+          - name: GRPC_SERVER_PORT
+            value: "8010"
+          - name: RUST_SERVER_HOST
+            value: "redisclient"
+          - name: RUST_SERVER_PORT
+            value: "8020"
+      - image: juan523/servergrpc
+        name: servergrpc
+        ports:
+        - containerPort: 8010
+        resources:
+          requests:
+            memory: "120Mi"
+            cpu: "150m"
+          limits:
+            memory: "310Mi"
+            cpu: "300m"
+        env:
+          - name: KAFKA_SERVER_HOST
+            value: "my-cluster-kafka-bootstrap"
+          - name: KAFKA_SERVER_PORT
+            value: "9092"
+          - name: GRPC_SERVER_HOST
+            value: "localhost"
+          - name: GRPC_SERVER_PORT
+            value: "8010"
+      - image: juan523/redisclient
+        name: redisclient
+        ports:
+        - containerPort: 8020
+        resources:
+          requests:
+            memory: "120Mi"
+            cpu: "150m"
+          limits:
+            memory: "310Mi"
+            cpu: "300m"
+        env:
+          - name: RUST_SERVER_HOST
+            value: "localhost"
+          - name: RUST_SERVER_PORT
+            value: "8020"
+          - name: RUST_REDIS_HOST
+            value: "34.118.233.176"
+          - name: RUST_REDIS_PORT
+            value: "6379"
+
+# `my-cluster-kafka-bootstrap.project.svc:9092` if not `my-cluster-kafka-bootstrap-address:9092`

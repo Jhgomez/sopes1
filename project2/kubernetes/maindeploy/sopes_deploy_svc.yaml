@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: d-api-rest-grpc-service
+  namespace: project
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: d-api-rest-grpc
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+# 8100 mio es 8080 ejemplo
