@@ -4,7 +4,10 @@ metadata:
   name: project-ingress
   namespace: project
   annotations:
-    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "X-Forwarded-For"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
 spec:
   ingressClassName: nginx
   rules:
@@ -16,5 +19,5 @@ spec:
               service:
                 name: s-api-rest-grpc
                 port:
-                  number: 8000
+                  number: 80
             path: /
