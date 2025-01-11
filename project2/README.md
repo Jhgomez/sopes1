@@ -756,6 +756,16 @@ openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
 
 openssl x509 -in some-cert.pem -noout -text
 
+### Using Elliptic Curve Key Algorithm
+We will do same as above but using this other Algorithm
+
+* choose a curve: `openssl ecparam -list_curves`
+
+* Generate algorithm parameters: `openssl genpkey -genparam -algorithm EC -out ecp.pem \
+       -pkeyopt ec_paramgen_curve:P-256 \
+       -pkeyopt ec_param_enc:named_curve`
+
+* openssl req -x509 -newkey ec:ecp.pem -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=*.okik.tech/emailAddress=hg@icloud.com"
 
 
 
