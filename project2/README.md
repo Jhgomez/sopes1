@@ -720,3 +720,96 @@ Check [this guide[(https://cert-manager.io/docs/installation/kubectl/#uninstalli
 * `--all-namespaces`: this can be used with any delete or get action
 * `--edit`: We can use this option before a `-f` option for example when creating from a file either from the internet or local
 
+
+* An S/MIME certificate is a digital certificate used to secure email communication1. It verifies your identity to recipients and ensures that your messages remain private and integral.
+
+
+golang goa vs openapi(code generator/design first APIs) an alternative to code first libraries like gin or gorilla
+
+
+
+
+
+
+
+
+
+
+
+
+# Self-signed TLS Certificates
+
+## [first](https://dev.to/techschoolguru/how-to-create-sign-ssl-tls-certificates-2aai)
+This is great tutorial to follow as it uses an internal CA to issue internal certificates which is what is recommended as a best practice. However we will combine it with elliptic curve keys, which openssl can also generate. For that you can follow [this tutorial](https://www.geeksforgeeks.org/blockchain-creating-elliptic-curve-keys-using-openssl/). I decided to use those type of keys as they are supposedly more performant.
+
+* Generate a private key and its self-signed certificate for the CA. They will be used to sign the CSR later
+
+openssl req -x509 -newkey rsa:4096 -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=*.okik.tech/emailAddress=hg@icloud.com"
+
+* Generate a private key and its paired CSR for the web server that we want to use TLS.
+
+openssl req -newkey rsa:4096 -keyout server-key.pem -out server-req.pem -subj "/C=FR/ST=Ile de France/L=Paris/O=PC Book/OU=Computer/CN=*.pcbook.com/emailAddress=pcbook@gmail.com"
+
+* Use the CA’s private key to sign the web server’s CSR and get back the signed certificate
+
+openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out server-cert.pem -extfile server-ext.cnf
+
+openssl x509 -in some-cert.pem -noout -text
+
+
+
+
+
+
+
+## [second](https://passwork.pro/blog/openssl/)
+
+* Generate a Public/Private keypair. 2048– key size
+
+openssl genrsa - out passwork.key 2048
+
+* extract the public key
+
+openssl rsa -in passwork.key -pubout -out passwork_public.key
+
+* proceed to creating a CSR In a real production scenario, such a CSR is forwarded to the CA which signs it on your behalf, so you get a certificate. we’ll create a CSR and self-sign it.
+
+openssl req -new -key passwork.key -out passwork.csr
+
+openssl req -text -in passwork.csr -noout -verify
+
+* create a self-signed certificate
+
+openssl x509 -in passwork.csr -out passwork.crt -req -signkey passwork.key -days 30
+
+
+
+
+
+## [third](https://dev.to/gauravgahlot/secure-your-kubernetes-applications-with-self-signed-certificates-jfj#:~:text=Following%20are%20the%20steps%20to%20generate%20the%20self-signed,req%20command%20with%20the%20-subj%20and%20-addext%20options%3A)
+
+* Generate an RSA private key
+
+openssl genrsa -out tls.key 4096
+
+* Generate a CSR (Certificate Signing Request)
+
+ openssl req -new -key tls.key -out tls.csr \
+    -subj "/CN=todo-app" -addext \
+    "subjectAltName=DNS:todo-app.default.svc.cluster.local,DNS:localhost,DNS:todo-app"
+
+
+* Generate the Self-Signed Certificate
+
+openssl x509 -req -days 365 -in tls.csr -signkey tls.key \
+    -out tls.crt -extensions req_ext \
+    -extfile <(printf "[req_ext]\nsubjectAltName=DNS:todo-app.default.svc.cluster.local,DNS:localhost,DNS:todo-app")
+
+openssl x509 -in tls.crt -text -noout
+
+
+
+
+
+
+
