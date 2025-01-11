@@ -759,9 +759,9 @@ openssl x509 -in some-cert.pem -noout -text
 ### Using Elliptic Curve Key Algorithm
 We will do same as above but using this other Algorithm
 
-* choose a curve: `openssl ecparam -list_curves`
+* choose a curve from list: `openssl ecparam -list_curves`
 
-* Generate algorithm parameters: `openssl genpkey -genparam -algorithm EC -out ecp.pem \
+* Generate elliptic curve algorithm parameters: `openssl genpkey -genparam -algorithm EC -out ecp.pem \
        -pkeyopt ec_paramgen_curve:P-256 \
        -pkeyopt ec_param_enc:named_curve`
 
@@ -820,6 +820,31 @@ openssl x509 -in tls.crt -text -noout
 
 
 
+
+
+[Self-signed Certificates best practices](https://myarch.com/self-signed-certificates-best-practices/?ref=passwork.pro/blog)
+
+* Use elliptic curve keys as opposed to the default RSA ones, they provide a number of benefits over RSA
+
+* You can make your certificate more robust by specifying the certificate’s purpose using extended key usage and “key usage” extensions. “TLS Web Server Authentication” should be the only allowed usage for a server. This will prevent unintended use of the certificate.
+
+* Using an internal CA for issuing all internal certificates is a much better option
+
+
+
+* An .cnf file example
+```
+[ extensions ]
+basicConstraints = critical, CA:FALSE
+keyUsage =critical, digitalSignature, keyEncipherment
+extendedKeyUsage = critical, serverAuth
+subjectKeyIdentifier = hash
+subjectAltName = @alt_names
+ 
+[ alt_names ]
+DNS.1 = host1
+DNS.2 = host2
+```
 
 
 
