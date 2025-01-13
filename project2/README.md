@@ -377,25 +377,12 @@ We will use this to be able to communicate to our Harbor ingress controller usin
 
 1. Follow the ["Using Elliptic Curve Key Algorithm"](#using-elliptic-curve-key-algorithm) section to learn how to create a self-signed TLS certificate. Interesting fact is I'm using elliptic curve algorithms instead of RSA.
 
-2. `kubectl create secret tls harbor-tls -n project --key server-key.pem --cert server-cert.pem -o yaml --dry-run=client > harbor-tls-secret.yaml`, this will store the public key certificate and private key in a tls Kubernetes secret. They keys will be base64 encoded, so if you want to see how they look originally you can decode them.
+2. `kubectl create secret tls harbor-tls -n project --key server-key.pem --cert server-cert.pem -o yaml --dry-run=client > harbor-tls-secret.yaml`, this will store the public key certificate and private key in a tls Kubernetes secret. They keys will be base64 encoded, so if you want to see how they look originally you can decode them. Be aware private keys can not be encrypted otherwise the Kubernetes secret won't be able to base64 encode and then decode it, meaning Kubernetes seems to not have support for encrypted private keys. We also need to copy the content of the certificate authority certificate we created called "ca-cert.pem"(it uld be .crt) go to a base64 encoder, encode it and paste it in the yaml file. Create the secret in your cluster with `kubectl create -f harbor-tls-secret.yaml`.
+
+3. Install the certificate/public key we generated as an certified authority "ca-cert.pem"(it could be .crt) on your computer. In windows you can follow [this tutorial](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/trusted-root-certification-authorities-certificate-store), basically use "mmc" app and select if you want to install it in your user only or in the whole system and then go to the "Trusted Root Certification Authorities" section to install it in there or remove it if you want however an easier option would be to make sure the certificate has an extension of ".crt" and then just double click it, again make the selections to install it in the "correct place". For Linux and MacOs you'll have to investigate a little
 
 ### Install Helm
 Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
-
-### Setting up Harbor(In Kubernetes cluster)
-Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/) 
-
-1. `helm repo add harbor https://helm.goharbor.io`
-
-2. `helm fetch harbor/harbor --untar`, this generates a Harbor directory with the "values.yml" file
-
-3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to true and `tls.certSource` to "secret", note default is "auto". In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`. You'll access with `https://core.harbor.sopes` later. Add the secret name we created before "harbor-tls" to `tls.secret.secretName`
-
-4. `helm install harbor harbor -n project`, check harbor is installed by checking it pods `kubectl get pods -n project`, `kubectl get services -n project`, `kubectl get pvc -n project`
-
-5. Do `docker logout` if you're logged in to your docker account and then loging to docker `docker login core.harbor.sopes -u sopes1` with password `952-WOp0m$7t`
-
-4. We have to create the ingress controller
 
 #### Set up a Nginx Controller using Helm
 Following [this documentation](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) will direct you [here](https://kubernetes.github.io/ingress-nginx/deploy/). We will use this controller to be able to expose the cluster with a DNS address and direct traffic to a Kubernetes object called Ingress, the controller is a load balancer. It only allows http and https traffic through port 80 and 443. We are basically following the sintax in [this section](https://kubernetes.github.io/ingress-nginx/deploy/#ovhcloud)
@@ -415,7 +402,23 @@ Following [this documentation](https://kubernetes.io/docs/concepts/services-netw
 
 6. Using [this](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation) and [this documentation](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation)
 
-7. With the same external-ip address we now will create a local DNS, I'm windows, but is very similar in Unix systems. My external IP is `34.58.126.96`, Open `hosts` that lives in this address `C:\Windows\System32\drivers\etc` and paste `34.58.126.96 core.harbor.sopes`
+### Setting up Harbor(In Kubernetes cluster)
+Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/) 
+
+1. `helm repo add harbor https://helm.goharbor.io`
+
+2. `helm fetch harbor/harbor --untar`, this generates a Harbor directory with the "values.yml" file
+
+3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to true and `tls.certSource` to "secret", note default is "auto". In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`. You'll access with `https://core.harbor.sopes` later. Add the secret name we created before "harbor-tls" to `tls.secret.secretName` and also to `caSecretName`
+
+4. `helm install harbor harbor -n project` or 'helm install harbor harbor/harbor -n project', check harbor is installed by checking it pods `kubectl get pods -n project`, `kubectl get services -n project`, `kubectl get pvc -n project`
+
+5. Do `docker logout` if you're logged in to your docker account and then loging to docker `docker login core.harbor.sopes -u sopes1` with password `952-WOp0m$7t`
+
+6. Harbor creates a lots of resources like some private volume claims and also in our case an ingress, give it a few minutes and then get the "harbor-ingress" external IP address which should be the same as any other ingress using the Nginx ingress controller class we created but with a different host name so copy it by getting it with `kubectl get ingress -n project`
+
+7. Using the IP address from previous step create a local DNS, I'm windows, but is very similar in Unix systems. My external IP is `34.57.250.18`, Open `hosts` file that lives in this address `C:\Windows\System32\drivers\etc` and paste `34.57.250.18 core.harbor.sopes`, you should open a notepad running as an administrator to edit this file
+
 
 ### Create Harbor Project
 
@@ -424,6 +427,105 @@ Following [this documentation](https://kubernetes.io/docs/concepts/services-netw
 2, Create a user with name `sopes1`, email `bouquet.zoom.6h@icloud.com`, fist/last name `sopes uno`, password `952-WOp0m$7t`
 
 3. Create project called `sopes1`, leave it private, and in the members tab inside the project add the user we just created `sopes1` as administrator
+
+### Tag images and push to Harbor
+
+1. Now in Harbor's "projects" view find "Repositories" tab and to the right a button with the name "PUSH COMMAND" find the ones you might need there. For example to tag an image for example an image I created called "juan503/kafka_client" we retag it with a different name with `docker tag juan523/kafkaclient:latest core.harbor.sopes/sopes1/kafkaclient:latest` and then push it `docker push `35.223.33.184.nip.io/sopes1/kafkaclient:latest` then I can pull it up anywhere if I'm logged in to the registry with `docker pull 35.223.33.184.nip.io/sopes1/kafka_client:latest`
+
+### Pulling Images From Harbor In Kubernetes
+[This guide](https://goharbor.io/docs/2.12.0/working-with-projects/working-with-images/pulling-pushing-images/#pulling-images-from-harbor-in-kubernetes) shows how you will pull docker images in your Kubernetes objects, also check this Kubernetes official documentation describing [how to pull images from a private registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
+
+1. Create a secret with the key and password of the user we created before as shown [here](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
+```bash
+kubectl create secret docker-registry harbor-cred -n project --docker-server=core.harbor.sopes --docker-username=sopes1 --docker-password=952-WOp0m$7t --docker-email=bouquet.zoom.6h@icloud.com --dry-run=client -o yaml > harbor-secret.yaml
+```
+
+### Following two sections are incorrect solution
+Chatgpt suggested these solutions but it didn't know they solve the problem only for pods inside the cluster, this means we create a local DNS that works well after they are up and running however our need is something different, what happens is that the component in charge to pull images to a container is "kubelet" and it doesn't use the DNS solutions we mentioned in the following two sections, but after some investigation I found out that kubelet uses the underlying OS DNS configurations, in Linux they are usually located in "/etc/resolv.conf" so we need a way to add the certificate and simulate the DNS, I will explain the solution below after the sections that were incorrect
+
+### Simulate a DNS inside the cluster(All these options are not the right solution but they are vey educative)
+We have a problem, when we create a container, either inside a pod or deployment, and pull from Harbor it will fail as in our case we don't actually have a DNS and Kubernetes makes an https call that fails because of it, so we need to fix this by doing something similar to what we are doing in our local computer, simulate a DNS. In Kubernetes we have at least four options
+
+1. using use the Kubernetes "hostAliases" but we would have to define it manually on each Kubernetes object 
+
+2. This might be the preferred as it solves the DNS cluster wide, using coreDNS
+
+3. Use the private registry service directly, this implies us tracking down and identify the service we need to reach and in the image field in the container do something like `image: <service-name>.<namespace>.svc.cluster.local/<repository>:<tag>` but also we would need to modify the secret we created to in the `docker-server` field
+
+4. Run a local DNS proxy pod like "dnsmasq" which is a very lightweight one and make it map a fake domain to the Ip address we need and then update the "dnsconfig" of all pods to use that pod as the DNS server
+
+### Using CoreDNS
+CoreDNS is the new option to to cluster DNS, previously only Kube-dns existed. Be aware most of cloud providers still use Kube-ds as the default option which is not the case of the official Kubernetes distro. We will install it using helm, we can search helm chart in "artifacthub" using the command `helm search hub <name>`, we will follow documentation from the [official repo](https://github.com/coredns/helm). I will also follow [this guide](https://medium.com/@protonex901/using-coredns-on-gke-2b3116300a37)
+
+1. `helm repo add coredns https://coredns.github.io/helm`
+
+2. `helm --namespace=kube-system install coredns coredns/coredns`, This creates some object but we are interested in the service of type "cluster ip" created for coredns, so copy the ip address of this service by pulling it with `kubectl get svc -n kube-system`
+
+3. We need to configure kube-dns to use coreDNS when responding to our private registry calls so we have to edit kube-dns's config map. The confi map for kube-dns exposes two configuration options, one is **stubDomains** which is a map of DNS suffix keys to DNS IPs and the other is **upstreamNameservers** which has additional nameservers, we will use the stubs to redirect the calls to the private registry to coredns. run `kubectl edit configmap kube-dns -n kube-system` and just add to it and the resulting yaml file would look like the following:
+```yaml
+apiVersion: v1
+data: # add this section
+  stubDomains: |
+    {
+      "core.harbor.sopes": [
+        "34.118.239.234" # your coredns service cluster ip (from step 1)
+      ]
+    }
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2024-06-03T00:00:0Z"
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+  name: kube-dns
+  namespace: kube-system
+  resourceVersion: "1234567"
+  uid: some-random-uid
+```
+
+4. Restart kube-dns pods to reload the ConfigMap, you'll have to delete the pods so they can be recreated. Find the pods you need to delete with `kubectl get pods -n kube-system -l "k8s-app=kube-dns"` and delete them with `kubectl delete pod <pod_name> -n kube-system`
+
+5. Edit the file, which is know as "corefile", that coredns uses to get its configurations with `kubectl edit configmap coredns coredns -n kube-system` and add the following. Note we are redirecting to harbor-core service, I found it by tracking down the ingress that harbor creates and found out that this is the service that handles pulls and pushes to registry, also see the format to get the IP address is this <service-name>.<namespace>.svc.cluster.local. To see more info about the configurations [look here]():
+```yaml
+      core.harbor.sopes:53 {
+          errors
+          cache 30
+          health {
+              lameduck 5s
+          }
+          log
+          rewrite name regex (.?)core.harbor.sopes  harbor-core.project.svc.cluster.local
+          forward . /etc/resolv.conf
+      }
+```
+
+
+    Corefile: |-
+      .:53 {
+          log
+          errors
+          health {
+              lameduck 5s
+          }
+          ready
+          kubernetes cluster.local in-addr.arpa ip6.arpa {
+              pods insecure
+              fallthrough in-addr.arpa ip6.arpa
+              ttl 30
+          }
+          prometheus 0.0.0.0:9153
+          forward . /etc/resolv.conf
+          cache 30
+          loop
+          reload
+          loadbalance
+          hosts {
+              34.57.250.18 core.harbor.sopes
+              fallthrough
+          }
+      }
+
+6. `kubectl -n kube-system rollout restart deployment coredns`
+
 
 
 ### Create deployments
@@ -792,9 +894,9 @@ Both are X.509 certificates formats/encodings. PEM format files(private keys, ce
 #### View PEM and DER files content
 Using openssl you can do this with any of the format types extensions using openssl's "x509":
 
-* PEM files and extensions: `openssl x509 -in CERTIFICATE.pem -text -noout`
+* PEM files and extensions: `openssl x509 -text -noout -in CERTIFICATE.pem `
 
-* DER files and extensions: `openssl x509 -inform der -in CERTIFICATE.der -text -noout`
+* DER files and extensions: `openssl x509 -text -noout -inform der -in CERTIFICATE.der`
 
 
 
@@ -874,5 +976,14 @@ DNS.1 = host1
 DNS.2 = host2
 ```
 
+`curl -kv https://core.harbor.sopes`
+
+
+
+
+
+
+
+addonmanager.kubernetes.io/mode: EnsureExists
 
 
