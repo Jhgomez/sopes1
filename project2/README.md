@@ -372,10 +372,15 @@ This is a list of the ports that our images are exposing. Be aware I had to buil
 
 ### Create a Kubernetes Cluster in GCP
 
+### Create a self-signed TLS certificate
+We will use this to be able to communicate to our Harbor ingress controller using https(http over tls), we will give the generated private key and public key/certificate to a Kubernetes secret which is then passed to Harbor configuration values file which when installed using this file will create an ingress controller(of nginx type in our case) that uses this TLS certificate to enable https communication, we will need to install the certificate in our local computer.
+
+1. Follow the ["Using Elliptic Curve Key Algorithm"](#Using Elliptic Curve Key Algorithm) section to learn how to create a self-signed TLS certificate. Interesting fact is I'm using elliptic curve algorithms instead of RSA.
+
+2. `kubectl create secret tls harbor-tls -n project --key server-key.pem --cert server-cert.pem -o yaml --dry-run=none > harbor-tls-secret.yaml`, this will store the public key certificate and private key in a tls Kubernetes secret
 
 ### Install Helm
 Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
-
 
 ### Setting up Harbor(In Kubernetes cluster)
 Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/) 
@@ -744,11 +749,11 @@ This is great tutorial to follow as it uses an internal CA to issue internal cer
 
 * Generate a private key and its self-signed certificate for the CA. They will be used to sign the CSR later
 
-openssl req -x509 -newkey rsa:4096 -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=*.okik.tech/emailAddress=hg@icloud.com"
+openssl req -x509 -newkey rsa:4096 -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik-tech/emailAddress=hg@icloud.com"
 
 * Generate a private key and its paired CSR for the web server that we want to use TLS.
 
-openssl req -newkey rsa:4096 -keyout server-key.pem -out server-req.pem -subj "/C=FR/ST=Ile de France/L=Paris/O=PC Book/OU=Computer/CN=*.pcbook.com/emailAddress=pcbook@gmail.com"
+openssl req -newkey rsa:4096 -keyout server-key.pem -out server-req.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com"
 
 * Use the CA’s private key to sign the web server’s CSR and get back the signed certificate
 
@@ -756,6 +761,7 @@ openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
 
 openssl x509 -in some-cert.pem -noout -text
 
+<a id="Using Elliptic Curve Key Algorithm"></a>
 ### Using Elliptic Curve Key Algorithm
 We will do same as above but using this other Algorithm
 
@@ -765,9 +771,23 @@ We will do same as above but using this other Algorithm
        -pkeyopt ec_paramgen_curve:P-256 \
        -pkeyopt ec_param_enc:named_curve`
 
-* openssl req -x509 -newkey ec:ecp.pem -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=*.okik.tech/emailAddress=hg@icloud.com"
+* Generate private key and its self-signed certificate for the CA. The private key will be encrypted using the pass phrase we enter: `openssl req -x509 -newkey ec:ecp.pem -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com"`
 
+* Generate a private key and CSR. note that "core.harbor.sopes" is the domain I want to authenticate, however we can use the same certificate for more domains, an example of how to use it in more domains is in the "Making an .cnf file". Note `-noenc`, I will explain this at the end of these commands: `openssl req -newkey ec:ecp.pem -noenc -keyout server-key.pem -out server-req.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=core.harbor.sopes/emailAddress=hg@icloud.com"`
 
+* You can find an example of a ".cnf" file in the best practices section which is below in this document: `openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out server-cert.pem -extfile server-ext.cnf`
+
+* Change the extensions. So public keys can also be called certificates, but to get an https connection we also need a private key. We produced some ".pem" files, in our case the public key/certificate and the private key live in a separated pem file(they could live in the same pem file), so our public key/certificate we'll change to a ".crt" extension and for our private key change it to ".key" extension. Note that to install a certificate in windows you have to use the ".crt" file extension.
+
+### PEM vs DER
+Both are X.509 certificates formats/encodings. PEM format files(private keys, certificates/public keys) have a header while DER not. PEM files can contain in a single file the certificate/public key and the private key. PEM files use extensions like ".crt", ".cer", ".key"(for private keys) or ".ca-bundle". DER are commonly used in a Java context. DER files usually use files extensions ".cer" and ".der". Both can be parsed/converted to the other format using openssl
+
+#### View PEM and DER files content
+Using openssl you can do this with any of the format types extensions using openssl's "x509":
+
+* PEM files and extensions: `openssl x509 -in CERTIFICATE.pem -text -noout`
+
+* DER files and extensions: `openssl x509 -inform der -in CERTIFICATE.der -text -noout`
 
 
 
@@ -808,7 +828,6 @@ openssl genrsa -out tls.key 4096
     -subj "/CN=todo-app" -addext \
     "subjectAltName=DNS:todo-app.default.svc.cluster.local,DNS:localhost,DNS:todo-app"
 
-
 * Generate the Self-Signed Certificate
 
 openssl x509 -req -days 365 -in tls.csr -signkey tls.key \
@@ -832,7 +851,9 @@ openssl x509 -in tls.crt -text -noout
 
 
 
-* An .cnf file example
+## Making an .cnf file
+[Here](https://man.openbsd.org/x509v3.cnf.5) is the documentation. In this document you can request things like client certificate authentication or to enable a certificate/public key to be used in several domain names/websites using the "subjectAltName" extension, however using the same public key/certificate in several domains could be considered a bad practice
+
 ```
 [ extensions ]
 basicConstraints = critical, CA:FALSE
