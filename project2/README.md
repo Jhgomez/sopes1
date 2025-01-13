@@ -375,9 +375,9 @@ This is a list of the ports that our images are exposing. Be aware I had to buil
 ### Create a self-signed TLS certificate
 We will use this to be able to communicate to our Harbor ingress controller using https(http over tls), we will give the generated private key and public key/certificate to a Kubernetes secret which is then passed to Harbor configuration values file which when installed using this file will create an ingress controller(of nginx type in our case) that uses this TLS certificate to enable https communication, we will need to install the certificate in our local computer.
 
-1. Follow the ["Using Elliptic Curve Key Algorithm"](#Using Elliptic Curve Key Algorithm) section to learn how to create a self-signed TLS certificate. Interesting fact is I'm using elliptic curve algorithms instead of RSA.
+1. Follow the ["Using Elliptic Curve Key Algorithm"](#using-elliptic-curve-key-algorithm) section to learn how to create a self-signed TLS certificate. Interesting fact is I'm using elliptic curve algorithms instead of RSA.
 
-2. `kubectl create secret tls harbor-tls -n project --key server-key.pem --cert server-cert.pem -o yaml --dry-run=none > harbor-tls-secret.yaml`, this will store the public key certificate and private key in a tls Kubernetes secret
+2. `kubectl create secret tls harbor-tls -n project --key server-key.pem --cert server-cert.pem -o yaml --dry-run=client > harbor-tls-secret.yaml`, this will store the public key certificate and private key in a tls Kubernetes secret. They keys will be base64 encoded, so if you want to see how they look originally you can decode them.
 
 ### Install Helm
 Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
@@ -389,7 +389,7 @@ Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/
 
 2. `helm fetch harbor/harbor --untar`, this generates a Harbor directory with the "values.yml" file
 
-3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to false. In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`. You'll access with `https://core.harbor.sopes` later
+3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to true and `tls.certSource` to "secret", note default is "auto". In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`. You'll access with `https://core.harbor.sopes` later. Add the secret name we created before "harbor-tls" to `tls.secret.secretName`
 
 4. `helm install harbor harbor -n project`, check harbor is installed by checking it pods `kubectl get pods -n project`, `kubectl get services -n project`, `kubectl get pvc -n project`
 
@@ -761,7 +761,7 @@ openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem 
 
 openssl x509 -in some-cert.pem -noout -text
 
-<a id="Using Elliptic Curve Key Algorithm"></a>
+
 ### Using Elliptic Curve Key Algorithm
 We will do same as above but using this other Algorithm
 
@@ -771,11 +771,18 @@ We will do same as above but using this other Algorithm
        -pkeyopt ec_paramgen_curve:P-256 \
        -pkeyopt ec_param_enc:named_curve`
 
-* Generate private key and its self-signed certificate for the CA. The private key will be encrypted using the pass phrase we enter: `openssl req -x509 -newkey ec:ecp.pem -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com"`
+* Generate private key and its self-signed certificate for the CA. The private key will be encrypted using the pass phrase we enter: `openssl req -x509 -newkey ec:ecp.pem -noenc -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com"`
+
+`openssl req -x509 -newkey ec:ecp.pem -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com" \
+-addext "basicConstraints = critical, CA:true" \
+-addext "keyUsage = critical, digitalSignature, keyEncipherment, keyCertSign" \
+-addext "extendedKeyUsage = serverAuth, clientAuth" \
+-addext "authorityKeyIdentifier = none" \
+-copy_extensions copyall`
 
 * Generate a private key and CSR. note that "core.harbor.sopes" is the domain I want to authenticate, however we can use the same certificate for more domains, an example of how to use it in more domains is in the "Making an .cnf file". Note `-noenc`, I will explain this at the end of these commands: `openssl req -newkey ec:ecp.pem -noenc -keyout server-key.pem -out server-req.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=core.harbor.sopes/emailAddress=hg@icloud.com"`
 
-* You can find an example of a ".cnf" file in the best practices section which is below in this document: `openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out server-cert.pem -extfile server-ext.cnf`
+* You can find an example of a ".cnf" file in the best practices section which is below in this document. Sign  request: `openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out server-cert.pem -extfile cerconfigs.cnf`
 
 * Change the extensions. So public keys can also be called certificates, but to get an https connection we also need a private key. We produced some ".pem" files, in our case the public key/certificate and the private key live in a separated pem file(they could live in the same pem file), so our public key/certificate we'll change to a ".crt" extension and for our private key change it to ".key" extension. Note that to install a certificate in windows you have to use the ".crt" file extension.
 
