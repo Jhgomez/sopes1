@@ -437,7 +437,7 @@ Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/
 
 1. Create a secret with the key and password of the user we created before as shown [here](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
 ```bash
-kubectl create secret docker-registry harbor-cred -n project --docker-server=core.harbor.sopes --docker-username=sopes1 --docker-password=952-WOp0m$7t --docker-email=bouquet.zoom.6h@icloud.com --dry-run=client -o yaml > harbor-secret.yaml
+kubectl create secret docker-registry harbor-cred -n project --docker-server=core.harbor.sopes --docker-username=sopes1 --docker-password=952-WOp0m$7t --docker-email=bouquet.zoom.6h@icloud.com --dry-run=client -o yaml > harbor-login-secret.yaml
 ```
 
 ### Following two sections are incorrect solution
@@ -525,6 +525,11 @@ metadata:
       }
 
 6. `kubectl -n kube-system rollout restart deployment coredns`
+
+
+
+
+
 
 
 
@@ -873,14 +878,15 @@ We will do same as above but using this other Algorithm
        -pkeyopt ec_paramgen_curve:P-256 \
        -pkeyopt ec_param_enc:named_curve`
 
-* Generate private key and its self-signed certificate for the CA. The private key will be encrypted using the pass phrase we enter: `openssl req -x509 -newkey ec:ecp.pem -noenc -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com"`
-
+* Generate private key and its self-signed certificate for the CA. The private key will be encrypted using the pass phrase we enter, a conf file can be found called "caconfigs.cnf" declaring extensions: 
+```
 `openssl req -x509 -newkey ec:ecp.pem -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com" \
 -addext "basicConstraints = critical, CA:true" \
 -addext "keyUsage = critical, digitalSignature, keyEncipherment, keyCertSign" \
 -addext "extendedKeyUsage = serverAuth, clientAuth" \
 -addext "authorityKeyIdentifier = none" \
 -copy_extensions copyall`
+```
 
 * Generate a private key and CSR. note that "core.harbor.sopes" is the domain I want to authenticate, however we can use the same certificate for more domains, an example of how to use it in more domains is in the "Making an .cnf file". Note `-noenc`, I will explain this at the end of these commands: `openssl req -newkey ec:ecp.pem -noenc -keyout server-key.pem -out server-req.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=core.harbor.sopes/emailAddress=hg@icloud.com"`
 
