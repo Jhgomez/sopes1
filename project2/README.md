@@ -411,8 +411,8 @@ gcloud container node-pools describe default-pool \
 
 4. (optional) Using [this](https://cloud.google.com/sdk/gcloud/reference/container/node-pools/create) and [this guide]() created the following command to create a node-pool with n2 computer to explictly choose the scopes
 ```
-gcloud container node-pools create my-pool \
-  --num-nodes=1 \
+gcloud container node-pools create my-pools \
+  --num-nodes=2 \
   --cluster=regix \
   --disk-size=50 \
   --disk-type=pd-balanced \
@@ -745,11 +745,6 @@ Check with nslookup tool, install a pod with those utilities like `kubectl run -
 If fails check logs of kube-dns and coreds pods
 
 
-
-
-
-
-
 ### Create deployments
 All will follow a similar process, create the yaml file to run configurations from this file. check the pods are healthy. Create the service that will expose the deployment objects inside the cluster and namespace most of it will be a ClusterIP
 
@@ -770,28 +765,27 @@ All will follow a similar process, create the yaml file to run configurations fr
 
 #### Mongo
 
-1. Create a Persitent Volume Claim, find the documentation. WE just need a basic set up, it will be an opaque storage claim
+1. Create a Persitent Volume Claim, find the documentation. WE just need a basic set up, it will be an opaque storage claim. The configurations I used are in the file "mongo_pvc.yaml". Just do `kubectl create -f mongo_pvc.yaml` to create the resource
 
 2. You will see this pending when doing a `kubectl get pvc -n project`, if you do a `kubectl describe pvc -n project` or `kubectl describe pvc/mongo-pvc -n project` or `kubectl logs pvc/mongo-pvc -n project`
 
-3. Start the base configurations with command below and then define the container port and container resource limits
+3. Start the base configurations with command below and then define the container port and container resource limits and then create it
 ```yaml
-`kubectl create deployment sopesmongo -n project --replicas=1 --image=mongo:8.0.4 --dry-run -o yaml > sopesmongo.yaml`
+`kubectl create deployment sopesmongo -n project --replicas=1 --image=mongo:8.0.4 --dry-run -o yaml > sopes_mongo.yaml`
 ```
 
 4. `kubectl expose deployment sopesmongo -n project --port=27017 --target-port=27017 --type=ClusterIP --dry-run -o yaml > sopes_mongo_svc.yaml`, check the services exists `kubectl get svc -n project` 
 
-5 `kubectl autoscale deployment sopesmongo -n project --min=1 --max=3 --cpu-percent=50 --dry-run -o yaml > sopes_mongo_hpa.yaml` add the HPA(horizontal pod autoscaler). make sure it has the namespace in the metadata section. , checkt the hpa exists `kubectl get hpa -n project`
+5 `kubectl autoscale deployment sopesmongo -n project --min=1 --max=3 --cpu-percent=50 --dry-run -o yaml > sopes_mongo_hpa.yaml` add the HPA(horizontal pod autoscaler). make sure it has the namespace in the metadata section. , check the hpa exists `kubectl get hpa -n project`
 
 6. Run mongosh, enter CLI `kubectl exec -it sopesmongo-<id> -n project -- bin/sh`
 
 #### Install Kafka Broker using Strimzi
-Follow [this](https://strimzi.io/quickstarts/) simple guide
+Follow [this](https://strimzi.io/quickstarts/) simple guide. Just build `kafka` and `cluster` yamls with `kubectl create -f <name>.yaml`, for the moment don't create the topic "manually" as according to strimzi documentation the operator creates a topic automatically when it receives a message and it doesn't exists. I modified the original quickstart files to be created in my namespace
 
-kubectl create -f 'https://strimzi.io/install/latest?namespace=project' -n project
+* kubectl create -f 'https://strimzi.io/install/latest?namespace=project' -n project
 
-
-kubectl apply -f https://strimzi.io/examples/latest/kafka/kraft/kafka-single-node.yaml -n kafka
+* kubectl apply -f https://strimzi.io/examples/latest/kafka/kraft/kafka-single-node.yaml -n project
 
 kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka 
 
@@ -801,7 +795,8 @@ quay.io/strimzi/operator:latest
 `kubectl -n project delete $(kubectl get strimzi -o name -n project)`: delete cluster
 `kubectl delete pvc -l strimzi.io/name=my-cluster-kafka -n project`: delete cluster persistent volume claim
 `kubectl -n kafka delete -f 'https://strimzi.io/install/latest?namespace=project'`: delete operator
-`kubectl get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}{"\n"}'` tls can be plain: get address to connect to cluster mine is `my-cluster-kafka-bootstrap.project.svc:9092` if not `my-kafka-bootstrap-address:9092`
+
+* `kubectl get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}{"\n"}' -n project` tls can be "plain": get address to connect to cluster mine is `my-cluster-kafka-bootstrap.project.svc:9092` if not `my-kafka-bootstrap-address:9092`
 
 #### Kakfa Client
 
