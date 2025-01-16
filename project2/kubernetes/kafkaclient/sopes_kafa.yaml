@@ -19,7 +19,7 @@ spec:
         app: sopeskafkaclient
     spec:
       containers:
-      - image: juan523/kafkaclient
+      - image: core.harbor.sopes/sopes1/kafkaclient
         name: kafkaclient
         env:
           - name: KAFKA_SERVER_HOST

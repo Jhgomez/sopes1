@@ -18,7 +18,7 @@ spec:
         app: d-api-rest-grpc
     spec:
       containers:
-      - image: juan523/clientgrpc
+      - image: core.harbor.sopes/sopes1/clientgrpc
         name: clientgrpc
         ports:
         - containerPort: 8000
@@ -42,7 +42,7 @@ spec:
             value: "redisclient"
           - name: RUST_SERVER_PORT
             value: "8020"
-      - image: juan523/servergrpc
+      - image: core.harbor.sopes/sopes1/servergrpc
         name: servergrpc
         ports:
         - containerPort: 8010
@@ -62,7 +62,7 @@ spec:
             value: "localhost"
           - name: GRPC_SERVER_PORT
             value: "8010"
-      - image: juan523/redisclient
+      - image: core.harbor.sopes/sopes1/redisclient
         name: redisclient
         ports:
         - containerPort: 8020
