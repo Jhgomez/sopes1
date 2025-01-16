@@ -368,18 +368,165 @@ This is a list of the ports that our images are exposing. Be aware I had to buil
 
 
 
+
+
+From [here](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates) I found the following info [here](https://github.com/containerd/containerd/blob/main/docs/hosts.md#hoststoml-content-description---detail)
+
+Bypass TLS Verification Example in Containerd
+To bypass the TLS verification for a private registry at 192.168.31.250:5000
+
+Create a path and hosts.toml text at the path "/etc/containerd/certs.d/docker.io/hosts.toml" with following or similar contents:
+
+server = "https://registry-1.docker.io"
+
+[host."http://192.168.31.250:5000"]
+  capabilities = ["pull", "resolve", "push"]
+  skip_verify = true
+
+
+CRI
+The old CRI config pattern for specifying registry.mirrors and registry.configs has been DEPRECATED. You should now point your registry config_path to the path where your hosts.toml files are located.
+
+Modify your config.toml (default location: /etc/containerd/config.toml) as follows:
+
+In containerd 2.x
+version = 3
+
+[plugins."io.containerd.cri.v1.images".registry]
+   config_path = "/etc/containerd/certs.d"
+
+
+In containerd 1.x
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri".registry]
+   config_path = "/etc/containerd/certs.d"
+
+
+
+
+
+
+
 ## Setting up Kubernetes
 
-### Create a Kubernetes Cluster in GCP
-
-### Create a self-signed TLS certificate
-We will use this to be able to communicate to our Harbor ingress controller using https(http over tls), we will give the generated private key and public key/certificate to a Kubernetes secret which is then passed to Harbor configuration values file which when installed using this file will create an ingress controller(of nginx type in our case) that uses this TLS certificate to enable https communication, we will need to install the certificate in our local computer.
+### Create a self-signed TLS certificate(Optional)
+This step is optional because you make your private registry be signed by a know certificate authority you can se how below. We will use this to be able to communicate to our Harbor ingress controller using https(http over tls), we will give the generated private key and public key/certificate to a Kubernetes secret which is then passed to Harbor configuration values file which when installed using this file will create an ingress controller(of nginx type in our case) that uses this TLS certificate to enable https communication, we will need to install the certificate in our local computer.
 
 1. Follow the ["Using Elliptic Curve Key Algorithm"](#using-elliptic-curve-key-algorithm) section to learn how to create a self-signed TLS certificate. Interesting fact is I'm using elliptic curve algorithms instead of RSA.
 
-2. `kubectl create secret tls harbor-tls -n project --key server-key.pem --cert server-cert.pem -o yaml --dry-run=client > harbor-tls-secret.yaml`, this will store the public key certificate and private key in a tls Kubernetes secret. They keys will be base64 encoded, so if you want to see how they look originally you can decode them. Be aware private keys can not be encrypted otherwise the Kubernetes secret won't be able to base64 encode and then decode it, meaning Kubernetes seems to not have support for encrypted private keys. We also need to copy the content of the certificate authority certificate we created called "ca-cert.pem"(it uld be .crt) go to a base64 encoder, encode it and paste it in the yaml file. Create the secret in your cluster with `kubectl create -f harbor-tls-secret.yaml`.
+### Creating A GCP Secret(optional if you choose to use a known CA)
+If you're planning to accessing a private registry that is behind a server(will use nginx ingress controller) that authenticates tls connections using a public key certificate signed by a private certificate authority(CA) follow this section. So we will follow [this guide](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates) so from a cli running on the directory containing your certificates run `gcloud secrets create ca-cert --replication-policy="automatic" --data-file=ca-cert.pem`
 
-3. Install the certificate/public key we generated as an certified authority "ca-cert.pem"(it could be .crt) on your computer. In windows you can follow [this tutorial](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/trusted-root-certification-authorities-certificate-store), basically use "mmc" app and select if you want to install it in your user only or in the whole system and then go to the "Trusted Root Certification Authorities" section to install it in there or remove it if you want however an easier option would be to make sure the certificate has an extension of ".crt" and then just double click it, again make the selections to install it in the "correct place". For Linux and MacOs you'll have to investigate a little
+### Creating an Custom Service Account
+In the "IAM & Admin" section go to "Service Accounts", and as indicated in the [documentation](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates#configure-secret-manager-access-gke) add roles "", "" and "".
+
+As a best practice check how to configure he [least-privileged service accounts](https://cloud.google.com/kubernetes-engine/docs/how-to/hardening-your-cluster#use_least_privilege_sa)
+
+I choosed to use a custom service account because when you use one by default your cluster and node pool gets the "cloud-platform" access scope assigned, other wise we would have to specify them manually meaning we would have to create the cluster using a glcoud command, you can see that is how it works [here](https://cloud.google.com/kubernetes-engine/docs/how-to/access-scopes#default_access_scopes), and if you want to know how to assign them with a command see [here](https://cloud.google.com/sdk/gcloud/reference/container/clusters/create#--scopes)
+
+### Creating a GCP Cluster(GKE)
+If you choose to use a known CA to sign your connections to your private registry the instructions to create a GKE cluster in this section doesn't apply and you'd just create a cluster without those specific configurations. Be aware I used the default service account to get permissions and roles so by default I the [compute engine default service account](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) is used.
+
+We follow [this guide requirementes](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates), basically they are pretty much the default values when you create a cluster with the "Standard: You manage your cluster" flow, but the important configurations when creating it from the cloud UI are in "default-pool/Security", select custom service account but in my case since I'm using the default service account, since that is the account selected out of the box which is already created by GCP automatically, I just need to enable "Allow full access to all Cloud APIs" and then in the "security" section enable "Enable Secret Manager" and "Enable Workload Identity", this is all because we are going to access a private registry with certificate signed by a private certificate authority
+
+### Check Scopes
+
+1. Ge the project number, you can get it from the project's console
+``` 
+gcloud projects describe sopes1-444607 \
+    --format="value(projectNumber)"
+```
+
+2. Check cluster's access scopes. If your cluster doesn't have the https://www.googleapis.com/auth/cloud-platform access scope, create a new cluster with this access scope.
+```
+gcloud container clusters describe regix \
+  --location=us-south1-a \
+  --flatten=nodeConfig \
+  --format='csv[delimiter="\\n",no-heading](oauthScopes)'
+```
+
+3. Check standard cluster/node pool access scopes. If your cluster doesn't have the `https://www.googleapis.com/auth/cloud-platform` access scope, create a new cluster with this access scope. 
+```
+gcloud container node-pools describe default-pool \
+  --cluster=regix \
+  --location=us-south1-a \
+  --flatten=config \
+  --format='csv[delimiter="\\n",no-heading](oauthScopes)'
+```
+
+4. (optional) Using [this](https://cloud.google.com/sdk/gcloud/reference/container/node-pools/create) and [this guide]() created the following command to create a node-pool with n2 computer to explictly choose the scopes
+```
+gcloud container node-pools create my-pool \
+  --num-nodes=1 \
+  --cluster=regix \
+  --disk-size=50 \
+  --disk-type=pd-balanced \
+  --image-type=COS_CONTAINERD \
+  --machine-type=n2-standard-2 \
+  --node-version=1.30.8-gke.1051000 \
+  --service-account=juangke@sopes1-444607.iam.gserviceaccount.com \
+  --enable-surge-upgrade \
+  --max-surge-upgrade=1 \
+  --max-unavailable-upgrade=0 \
+  --workload-metadata=GKE_METADATA \
+  --scopes=cloud-platform,logging-write,monitoring,service-management,service-control,trace \
+  --node-locations=us-south1-a \
+  --zone=us-south1-a
+```
+
+### Configure Containerd in Existing clusters(optional if using a known CA)
+According to [official documentation](https://kubernetes.io/docs/setup/production-environment/container-runtimes/) all nodes in the cluster will install a CRI(container runtime interface), in this case most of the times it is containerd which is a container runtime, its configurations are used to determine whether an https/http connection is safe, without doing this configuration "kubelet"(component in charge to pull docker images in k8) will fail with an error like "tls: failed to verify certificate: x509: certificate signed by unknown authority", so we will pass/install the certificate to all nodes in the cluster by configuring containerd in this section. 
+
+Following same guide previously mentioned in other sections but [this](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates#create-config-file) specific section:
+
+1. Create a "containerd-configuration.yaml" with following configs:
+```yaml
+privateRegistryAccessConfig:
+  certificateAuthorityDomainConfig:
+  - gcpSecretManagerCertificateConfig:
+      secretURI: "projects/438194862050/secrets/ca-cert/versions/1"
+    fqdns:
+      - "core.harbor.sopes"
+  enabled: true
+```
+
+2, Update cluster to use configurations, make sure to run it from a terminal 
+```
+gcloud container clusters update regix \
+    --location=us-south1-a \
+    --containerd-config-from-file=containerd-configuration.yaml
+```
+
+3. My cluster uses automatic upgrades but if your cluster/node-pool doesn't do automatic upgrades run:
+```
+gcloud container clusters upgrade CLUSTER_NAME \
+    --location=LOCATION \
+    --cluster-version=VERSION
+```
+
+4. Check containerd's configuration
+```
+gcloud container clusters describe regix \
+    --location=us-south1-a \
+    --flatten="nodePoolDefaults.nodeConfigDefaults.containerdConfig"
+```
+
+
+gcloud container clusters get-credentials regix --zone us-south1-a --project sopes1-444607
+
+2050-compute@developer.gserviceaccount.com
+
+### Install cert-manager(optional)(pending)
+To avoid creating a private certificate authority and sign tls public key certificates using that CA you can install [cer-manager](cert-manager.io)
+
+
+
+### Configuring host DNS
+At this point when pulling and image without any further set up, first kubelet will display error "could not resolve/find host core.harbor.sopes", this is because I actually didn't by any domain so I need to simulate a DNS and this is possible by connecting to the vm instance that the cluster is running over. So connect via ssh any way you want, either from gcp shell of using gcloud once you're in the shell do `sudo nano /etc/hosts` and add the ip address of the service that Harbor created, you could get it from `kubectl get ingress -n project` or `kubectl get svc -n project` and then paste it like ` core.harbor.sopes`, this will avoid kubelet failing due to not finding the domain.
+
+### Configuring Containerd
+
 
 ### Install Helm
 Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
@@ -408,6 +555,10 @@ Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/
 1. `helm repo add harbor https://helm.goharbor.io`
 
 2. `helm fetch harbor/harbor --untar`, this generates a Harbor directory with the "values.yml" file
+
+2. `kubectl create secret tls harbor-tls -n project --key server-key.pem --cert server-cert.pem -o yaml --dry-run=client > harbor-tls-secret.yaml`, this will store the public key certificate and private key in a tls Kubernetes secret. They keys will be base64 encoded, so if you want to see how they look originally you can decode them. Be aware private keys can not be encrypted otherwise the Kubernetes secret won't be able to base64 encode and then decode it, meaning Kubernetes seems to not have support for encrypted private keys. We also need to copy the content of the certificate authority certificate we created called "ca-cert.pem"(it uld be .crt) go to a base64 encoder, encode it and paste it in the yaml file. Create the secret in your cluster with `kubectl create -f harbor-tls-secret.yaml`.
+
+3. Install the certificate/public key we generated as an certified authority "ca-cert.pem"(it could be .crt) on your computer. In windows you can follow [this tutorial](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/trusted-root-certification-authorities-certificate-store), basically use "mmc" app and select if you want to install it in your user only or in the whole system and then go to the "Trusted Root Certification Authorities" section to install it in there or remove it if you want however an easier option would be to make sure the certificate has an extension of ".crt" and then just double click it, again make the selections to install it in the "correct place". For Linux and MacOs you'll have to investigate a little
 
 3. Edit "values.yml" you need to configure this `expose.ingress.hosts.core` and this `externalURL` to a domain name you want, we will use that domain name later, mine is `core.harbor.sopes` . Also set `tls.enable` to true and `tls.certSource` to "secret", note default is "auto". In `ingress.className` enter "nginx". In `persistance.persistentVolumeClaim.registry.storageClass`, `persistence.persistentVolumeClaim.jobservice.storageClass`, `persistence.persistentVolumeClaim.database.storageClass`, `persistence.persistentVolumeClaim.redis.storageClass`, `persistence.persistentVolumeClaim.trivy.storageClass` enter `standard-rwo` this will helps us persist harbors info using gke's default storage called `standard-rwo`. You'll access with `https://core.harbor.sopes` later. Add the secret name we created before "harbor-tls" to `tls.secret.secretName` and also to `caSecretName`
 
@@ -440,7 +591,7 @@ Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/
 kubectl create secret docker-registry harbor-cred -n project --docker-server=core.harbor.sopes --docker-username=sopes1 --docker-password=952-WOp0m$7t --docker-email=bouquet.zoom.6h@icloud.com --dry-run=client -o yaml > harbor-login-secret.yaml
 ```
 
-### Following two sections are incorrect solution
+### Following three sections are incorrect solution
 Chatgpt suggested these solutions but it didn't know they solve the problem only for pods inside the cluster, this means we create a local DNS that works well after they are up and running however our need is something different, what happens is that the component in charge to pull images to a container is "kubelet" and it doesn't use the DNS solutions we mentioned in the following two sections, but after some investigation I found out that kubelet uses the underlying OS DNS configurations, in Linux they are usually located in "/etc/resolv.conf" so we need a way to add the certificate and simulate the DNS, I will explain the solution below after the sections that were incorrect
 
 ### Simulate a DNS inside the cluster(All these options are not the right solution but they are vey educative)
@@ -526,6 +677,13 @@ metadata:
 
 6. `kubectl -n kube-system rollout restart deployment coredns`
 
+
+### Debuggin DNS
+Follow [this tutorial](https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/). It is important to know `/etc/resolv.conf` is the file in all containers running in the cluster which indicates how will resolve DNS so you could do `kubectl exec -ti <pod_name> -- cat /etc/resolv.conf`,
+
+Check with nslookup tool, install a pod with those utilities like `kubectl run --restart=Always --image registry.k8s.io/e2e-test-images/agnhost:2.39 dnstools`. Look up dns `kubectl exec -ti dnstools -- nslookup <service_name>.<namespace(optional if not in same ns)>`. `kubectl exec -ti dnstools -- host kubernetes`
+
+If fails check logs of kube-dns and coreds pods
 
 
 
