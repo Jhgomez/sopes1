@@ -1,0 +1,7 @@
+privateRegistryAccessConfig:
+  certificateAuthorityDomainConfig:
+  - gcpSecretManagerCertificateConfig:
+      secretURI: "projects/438194862050/secrets/ca-cert/versions/1"
+    fqdns:
+      - "core.harbor.sopes"
+  enabled: true
