@@ -284,11 +284,6 @@ I followed [this documentation](https://kubernetes.io/docs/tasks/tools/install-k
 	* `gcloud container clusters get-credentials sopes1 --zone us-central1-c --project sopes1-444607`: connect to the cluster we created
 	* `kubectl create namespace project`: Create a namespace `kubectl create ns project --dry-run -o yaml`
 
-## Set up a DNS in GCP
-We need a DNS to configure Harbor in next step
-
-1. Follow [this guide](https://cloud.google.com/dns/docs/set-up-dns-records-domain-name)
-
 ## Setting up Harbor(Not good, it had to be installed in kubernetes)
 I will follow the [official documentation](https://goharbor.io/docs/2.12.0/install-config/)
 
@@ -505,28 +500,18 @@ gcloud container clusters upgrade CLUSTER_NAME \
     --cluster-version=VERSION
 ```
 
-4. Check containerd's configuration
+4. Check containerd's configuration, you should see your configurations with this command:
 ```
 gcloud container clusters describe regix \
     --location=us-south1-a \
     --flatten="nodePoolDefaults.nodeConfigDefaults.containerdConfig"
 ```
 
-
-gcloud container clusters get-credentials regix --zone us-south1-a --project sopes1-444607
-
-2050-compute@developer.gserviceaccount.com
-
 ### Install cert-manager(optional)(pending)
-To avoid creating a private certificate authority and sign tls public key certificates using that CA you can install [cer-manager](cert-manager.io)
-
-
+To avoid creating a private certificate authority and sign tls public key certificates using that CA and configure containerd you can install [cer-manager](cert-manager.io)
 
 ### Configuring host DNS
 At this point when pulling and image without any further set up, first kubelet will display error "could not resolve/find host core.harbor.sopes", this is because I actually didn't by any domain so I need to simulate a DNS and this is possible by connecting to the vm instance that the cluster is running over. So connect via ssh any way you want, either from gcp shell of using gcloud once you're in the shell do `sudo nano /etc/hosts` and add the ip address of the service that Harbor created, you could get it from `kubectl get ingress -n project` or `kubectl get svc -n project` and then paste it like ` core.harbor.sopes`, this will avoid kubelet failing due to not finding the domain.
-
-### Configuring Containerd
-
 
 ### Install Helm
 Install it using the [official documentation](https://helm.sh/docs/intro/quickstart/). Helm help us install packages to Kubernetes clusters, we'll use it in next section.
@@ -545,9 +530,20 @@ Following [this documentation](https://kubernetes.io/docs/concepts/services-netw
 
 4. `kubectl get ingressclass`: shows ingress controller info
 
-5. Get the ingress contorller's External-IP/public IP with command `kubectl get svc -n project` and append `.nip.io` to the end if you want to know how this works check [their website](https://nip.io/), this will simulate a DNS for our IP address. then paste this in the `host` label of your YAML file. My external-ip address is `34.58.126.96`
+5. Get the ingress contorller's External-IP/public IP with command `kubectl get svc -n project` and append `.nip.io` to the end if you want to know how this works check [their website](https://nip.io/), this will simulate a DNS for our IP address. My external-ip address is `34.174.102.23`, copy it and see next step
 
-6. Using [this](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation) and [this documentation](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation)
+6. Creater script with `kubectl create ingress project-ingress -n project --class=nginx --rule="34.174.102.23.nip.io/*=s-api-rest-grpc:80" --dry-run=client -o yaml > ingress.yaml`
+
+7. Modify yaml file and add nginx configurations by adding an `annotations` section under `metadata`, I used [this](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation) and [this documentation](https://docs.nginx.com/nginx-ingress-controller/installation/ingress-nginx/#header-manipulation) to get these configurations. also make sure to add the namespace
+```
+  annotations:
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "X-Forwarded-For"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+``` 
+
+8. Create ingress `kubectl create -f ingress.yaml`
 
 ### Setting up Harbor(In Kubernetes cluster)
 Follow [this guide](https://goharbor.io/docs/edge/install-config/harbor-ha-helm/) 
