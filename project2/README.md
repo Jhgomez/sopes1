@@ -362,47 +362,6 @@ This is a list of the ports that our images are exposing. Be aware I had to buil
 2. 
 
 
-
-
-
-From [here](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates) I found the following info [here](https://github.com/containerd/containerd/blob/main/docs/hosts.md#hoststoml-content-description---detail)
-
-Bypass TLS Verification Example in Containerd
-To bypass the TLS verification for a private registry at 192.168.31.250:5000
-
-Create a path and hosts.toml text at the path "/etc/containerd/certs.d/docker.io/hosts.toml" with following or similar contents:
-
-server = "https://registry-1.docker.io"
-
-[host."http://192.168.31.250:5000"]
-  capabilities = ["pull", "resolve", "push"]
-  skip_verify = true
-
-
-CRI
-The old CRI config pattern for specifying registry.mirrors and registry.configs has been DEPRECATED. You should now point your registry config_path to the path where your hosts.toml files are located.
-
-Modify your config.toml (default location: /etc/containerd/config.toml) as follows:
-
-In containerd 2.x
-version = 3
-
-[plugins."io.containerd.cri.v1.images".registry]
-   config_path = "/etc/containerd/certs.d"
-
-
-In containerd 1.x
-version = 2
-
-[plugins."io.containerd.grpc.v1.cri".registry]
-   config_path = "/etc/containerd/certs.d"
-
-
-
-
-
-
-
 ## Setting up Kubernetes
 
 ### Create a self-signed TLS certificate(Optional)
@@ -507,6 +466,110 @@ gcloud container clusters describe regix \
     --flatten="nodePoolDefaults.nodeConfigDefaults.containerdConfig"
 ```
 
+### Special Section, "what do these configs actually do?"
+From [here](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates) I found the following info [here](https://github.com/containerd/containerd/blob/main/docs/hosts.md#hoststoml-content-description---detail)
+
+Bypass TLS Verification Example in Containerd
+To bypass the TLS verification for a private registry at 192.168.31.250:5000
+
+Create a path and hosts.toml text at the path "/etc/containerd/certs.d/docker.io/hosts.toml" with following or similar contents:
+
+server = "https://registry-1.docker.io"
+
+[host."http://192.168.31.250:5000"]
+  capabilities = ["pull", "resolve", "push"]
+  skip_verify = true
+
+
+CRI
+The old CRI config pattern for specifying registry.mirrors and registry.configs has been DEPRECATED. You should now point your registry config_path to the path where your hosts.toml files are located.
+
+Modify your config.toml (default location: /etc/containerd/config.toml) as follows:
+
+In containerd 2.x
+version = 3
+
+[plugins."io.containerd.cri.v1.images".registry]
+   config_path = "/etc/containerd/certs.d"
+
+
+In containerd 1.x
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri".registry]
+   config_path = "/etc/containerd/certs.d"
+
+However they are now moved to a file called /etc/containerd/certs.d as mentioned [here](https://github.com/containerd/containerd/issues/9199)
+
+We could have done this manually somehow but it is better to do it using google configs
+
+Another option we had was to use a Kubernetes object called "daemonset", it would have allowed us to somehow install the CA or somehow modify the containerd version install on each node to allow insecure connections I found this script that does exactly that [here](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates#update-ds-both-models) and [here](https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-node-tools/master/container-insecure-registry/insecure-registry-config.yaml)
+
+```
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: insecure-registries
+  namespace: default
+  labels:
+    k8s-app: insecure-registries
+spec:
+  selector:
+    matchLabels:
+      name: insecure-registries
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: insecure-registries
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-container-runtime: "containerd"
+      hostPID: true
+      containers:
+        - name: startup-script
+          image: registry.k8s.io/startup-script:v2
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          env:
+          - name: ADDRESS
+            value: "REGISTRY_ADDRESS"
+          - name: STARTUP_SCRIPT
+            value: |
+              set -o errexit
+              set -o pipefail
+              set -o nounset
+
+              if [[ -z "$ADDRESS" || "$ADDRESS" == "REGISTRY_ADDRESS" ]]; then
+                echo "Error: Environment variable ADDRESS is not set in containers.spec.env"
+                exit 1
+              fi
+
+              echo "Allowlisting insecure registries..."
+              containerd_config="/etc/containerd/config.toml"
+              hostpath=$(sed -nr 's;  config_path = "([-/a-z0-9_.]+)";\1;p' "$containerd_config")
+              if [[ -z "$hostpath" ]]; then
+                echo "Node uses CRI config model V1 (deprecated), adding mirror under $containerd_config..."
+                grep -qxF '[plugins."io.containerd.grpc.v1.cri".registry.mirrors."'$ADDRESS'"]' "$containerd_config" || \
+                  echo -e '[plugins."io.containerd.grpc.v1.cri".registry.mirrors."'$ADDRESS'"]\n  endpoint = ["http://'$ADDRESS'"]' >> "$containerd_config"
+              else
+                host_config_dir="$hostpath/$ADDRESS"
+                host_config_file="$host_config_dir/hosts.toml"
+                echo "Node uses CRI config model V2, adding mirror under $host_config_file..."
+                if [[ ! -e "$host_config_file" ]]; then
+                  mkdir -p "$host_config_dir"
+                  echo -e "server = \"https://$ADDRESS\"\n" > "$host_config_file"
+                fi
+                echo -e "[host.\"http://$ADDRESS\"]\n  capabilities = [\"pull\", \"resolve\"]\n" >> "$host_config_file"
+              fi
+              echo "Reloading systemd management configuration"
+              systemctl daemon-reload
+              echo "Restarting containerd..."
+              systemctl restart containerd
+```
+
 ### Install cert-manager(optional)(pending)
 To avoid creating a private certificate authority and sign tls public key certificates using that CA and configure containerd you can install [cer-manager](cert-manager.io)
 
@@ -588,7 +651,7 @@ kubectl create secret docker-registry harbor-cred -n project --docker-server=cor
 ```
 
 ### Following three sections are incorrect solution
-Chatgpt suggested these solutions but it didn't know they solve the problem only for pods inside the cluster, this means we create a local DNS that works well after they are up and running however our need is something different, what happens is that the component in charge to pull images to a container is "kubelet" and it doesn't use the DNS solutions we mentioned in the following two sections, but after some investigation I found out that kubelet uses the underlying OS DNS configurations, in Linux they are usually located in "/etc/resolv.conf" so we need a way to add the certificate and simulate the DNS, I will explain the solution below after the sections that were incorrect
+Chatgpt suggested these solutions but it didn't know they don't solve the problem. What it does is actually a DNS only for pods inside the cluster, this means we create a local DNS that works well after a pod is up and running however our need is something different, what happens is that the component in charge to pull images to a container is "kubelet" and it doesn't use the DNS solutions we mentioned in the following two sections, but after some investigation I found out that kubelet uses the underlying OS DNS configurations, in Linux they are usually located in "/etc/resolv.conf" and we can simulate a local DNS by editing file `/etc/hosts` so we need a way to add the certificate and simulate the DNS, I explained the solutions in previous sections.
 
 ### Simulate a DNS inside the cluster(All these options are not the right solution but they are vey educative)
 We have a problem, when we create a container, either inside a pod or deployment, and pull from Harbor it will fail as in our case we don't actually have a DNS and Kubernetes makes an https call that fails because of it, so we need to fix this by doing something similar to what we are doing in our local computer, simulate a DNS. In Kubernetes we have at least four options
