@@ -155,7 +155,7 @@ docker exec -it <container_id> sh  # this start the alpines's command line
 redis-cli  # access redis CLI to interact with Redis server
 ```
 
-5. Search [here](https://redis.io/docs/latest/commands/) for JSON commands, remember we are storing JSON at very least we will use `JSON.GET `
+5. Search [here](https://redis.io/docs/latest/commands/) for JSON commands, remember we are storing JSON at very least we will use `JSON.GET `, get a list of key with `keys *` choose a key and now use the json query `JSON.GET <key> $`, this gets all the info in the key now we can choose fields in the json just by adding a point for and the a field in the json like `JSON.GET region $.CENTRAL`
 
 6. Bellow is the logic using Redis commands to insert and read the info to and from Redis
 
@@ -1001,11 +1001,11 @@ kubectl expose deployment gotest-d --name=gotest-s --port=80 --target-port=8000 
 
 kubectl create ingress goingress --class=default --rule="foo.com/path*=svc:8080" --dry-run -o yaml > ingress.yaml
 
-curl http://34.57.250.18.nip.io/course \
+curl http://34.174.102.23.nip.io/course \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
-    --data '{"curso": "ANP", "facultad": "Ingenieria", "carrera": "Civil", "region": "METROPOLITANA"}'
+    --data '{"curso": "SA", "facultad": "Ingenieria", "carrera": "Civil", "region": "METROPOLITANA"}'
 
 
 install certmanager
