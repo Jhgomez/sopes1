@@ -3,19 +3,21 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    app: d-api-rest-grpc
+    app: main-deploy
+    environment: develop 
   name: d-api-rest-grpc
   namespace: project
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: d-api-rest-grpc
+      app: main-deploy
+      environment: develop
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: d-api-rest-grpc
+        app: main-deploy
+        environment: develop
     spec:
       containers:
       - image: core.harbor.sopes/sopes1/clientgrpc
@@ -35,11 +37,11 @@ spec:
           - name: GRPC_CLIENT_PORT
             value: "8000"
           - name: GRPC_SERVER_HOST
-            value: "servergrpc"
+            value: "0.0.0.0" 
           - name: GRPC_SERVER_PORT
             value: "8010"
           - name: RUST_SERVER_HOST
-            value: "redisclient"
+            value: "0.0.0.0"
           - name: RUST_SERVER_PORT
             value: "8020"
       - image: core.harbor.sopes/sopes1/servergrpc
@@ -55,11 +57,11 @@ spec:
             cpu: "300m"
         env:
           - name: KAFKA_SERVER_HOST
-            value: "my-cluster-kafka-bootstrap"
+            value: "my-cluster-kafka-bootstrap.project.svc"
           - name: KAFKA_SERVER_PORT
             value: "9092"
           - name: GRPC_SERVER_HOST
-            value: "localhost"
+            value: "0.0.0.0"
           - name: GRPC_SERVER_PORT
             value: "8010"
       - image: core.harbor.sopes/sopes1/redisclient
@@ -75,12 +77,14 @@ spec:
             cpu: "300m"
         env:
           - name: RUST_SERVER_HOST
-            value: "localhost"
+            value: "0.0.0.0"
           - name: RUST_SERVER_PORT
             value: "8020"
           - name: RUST_REDIS_HOST
-            value: "34.118.233.176"
+            value: "sopesredis.project.svc"
           - name: RUST_REDIS_PORT
             value: "6379"
+      imagePullSecrets:
+      - name: harbor-cred
 
 # `my-cluster-kafka-bootstrap.project.svc:9092` if not `my-cluster-kafka-bootstrap-address:9092`
