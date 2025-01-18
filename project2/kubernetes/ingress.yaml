@@ -4,20 +4,45 @@ metadata:
   name: project-ingress
   namespace: project
   annotations:
+#    ingress.kubernetes.io/proxy-body-size: "0"
+#    ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-headers: "X-Forwarded-For"
     nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+#    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+#    nginx.ingress.kubernetes.io/proxy-body-size: "0"
 spec:
   ingressClassName: nginx
   rules:
     - host: 34.174.102.23.nip.io
       http:
         paths:
-          - pathType: Prefix
+          - pathType: Exact
             backend:
               service:
                 name: s-api-rest-grpc
                 port:
-                  number: 80
+                  number: 8000
             path: /
+          - pathType: Exact
+            backend:
+              service:
+                name: s-api-rest-grpc
+                port:
+                  number: 8000
+            path: /course
+ #   - host: core.harbor.sopes
+ #     http:
+ #       paths:
+#          - pathType: Exact
+#            backend:
+#              service:
+#                name: grafana
+#                port:
+#               number: 3000
+#            path: /grafana
+#  tls:
+#  - hosts:
+#      - core.harbor.sopes
+#    secretName: harbor-tls

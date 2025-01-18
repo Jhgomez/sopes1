@@ -28,6 +28,18 @@ spec:
           limits:
             memory: "200Mi"
             cpu: "250m"
+        command: ["redis-server", "/redis-master/redis.conf"]
         ports:
         - containerPort: 6379
+        volumeMounts:
+        - mountPath: /redis-master
+          name: config
+      volumes:
+        - name: config
+          configMap:
+            name: sopes-redis-config
+            items:
+            - key: redis-config
+              path: redis.conf
+      
 status: {}

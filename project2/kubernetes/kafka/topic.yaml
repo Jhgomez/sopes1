@@ -5,7 +5,7 @@ metadata:
   labels:
     strimzi.io/cluster: my-cluster
   namespace: project
-spec: (3)
+spec:
   topicName: assignment
   partitions: 1
   replicas: 1
