@@ -843,10 +843,10 @@ Registries are evolving as generic artifact stores. ORAS is a technology that le
 4. In our set up the https certificate does not handle TLS certificates as it is not configured in a cloud provider so we need to do something similar as we did with Docker. In this case we need to see the [following guide](https://oras.land/docs/compatible_oci_registries/#using-a-plain-http-docker-registry) which explains how to interact with http registries(AKA insecure registries). Basicallly to any pull, push or login command append the `--insecure` flag
 
 
-5. Login to oras using the registry `oras login [flags] <registry>` so in my case I will do a `oras login 35.223.33.184.nip.io --insecure -u sopes1` and enter password "!\09IZbZ$3pC". I can also do the plain http `oras login 35.223.33.184 --insecure -u sopes1`. (alternative) `oras login core.harbor.sopes --insecure -u sopes1` with password `952-WOp0m$7t`
+5. Login to oras using the registry `oras login [flags] <registry>` so in my case I will do a `oras login 35.223.33.184.nip.io --insecure -u sopes1` and enter password "!\09IZbZ$3pC". I can also do the plain http `oras login 35.223.33.184 --insecure -u sopes1`. (alternative) `oras login core.harbor.sopes -u sopes1` with password `952-WOp0m$7t`
 
 
-6. The first thing we will push to Harbor in an OCI format is the json file in the locust directory. `oras push --insecure 35.223.33.184.nip.io/sopes1/courses:latest courses.json`. This command could repacle `--insecure` tag with the `--plain-http` tag and push it using the IP address `oras push --insecure 35.223.33.184/sopes1/courses:latest courses.json`. (alternative) `oras push --insecure core.harbor.sopes/sopes1/courses:latest courses.json` 
+6. The first thing we will push to Harbor in an OCI format is the json file in the locust directory. `oras push --insecure 35.223.33.184.nip.io/sopes1/courses:latest courses.json`. This command could repacle `--insecure` tag with the `--plain-http` tag and push it using the IP address `oras push --insecure core.harbor.sopoes/sopes1/courses:latest courses.json`. (alternative) `oras push --insecure core.harbor.sopes/sopes1/courses:latest courses.json` 
 
 7. To test this we could delete the json file and then run `oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest`. (alternative) `oras pull --insecure core.harbor.sopes/sopes1/courses:latest`
 
@@ -859,34 +859,85 @@ CONFIG GET *                                                      // list of con
 AUTH <user_name> <password>                                       // authenticates user
 ACL LIST                                                          // see access list info, make sure user is on or user will not be able to authenticate
 ACL SETUSER sop on +@admin allcommands allkeys allchannels >sop   // see [here](https://redis.io/docs/latest/commands/acl-setuser/)
+info modules                                                      // checks modules installed
 
 I used this command to create the secret
 
 `kubectl create secret generic redis-secret --from-literal=user=sopes --from-literal=password=sopes -n project --dry-run=client -o yaml > user-secret.yaml`
 
+Note that according to [this official documentation](https://redis.io/docs/latest/operate/oss_and_stack/management/config-file/) to read the configuration file Redis must be started with the file path as first argument and we also we need to load modules, that is why we include this command in the container:
+
+`./redis-server /path/to/redis.conf`
+
+### Setup Grafana
+
+#### Create a TLS certificate
+Using the private CA I created in [this section](#using-elliptic-curve-dey-algorithm) run the following commands
+
+* Generate a private key and CSR. note that "grafana.sopes" is the domain I want to authenticate, even thought a certificate can be used for several domains is better not to same public key across different domains so I'm creating a new one, an example of how to use it in more domains is in the "Making an .cnf file". Note `-noenc`, this option is used to avoid encrypting private key because Kubernetes doesn't support encrypted private keys: `openssl req -newkey ec:ecp.pem -noenc -keyout grafana-key.pem -out grafana-req.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=grafana.sopes/emailAddress=hg@icloud.com"`
+
+* You can find an example of a ".cnf" file in the best practices section which is below in this document. Sign  request: `openssl x509 -req -in grafana-req.pem -days 360 -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out grafana-cert.pem -extfile grafanacerconfigs.cnf`
+
+* Create secret to store certificate `kubectl create secret tls grafana-tls -n project --key grafana-key.pem --cert grafana-cert.pem -o yaml --dry-run=client > grafana-tls-secret.yaml`, encrypt private certificate authority to base 64 and add it to this file unde `ca.crt`
+
+* Create secret with `kubectl create -f`
+
+#### Install Grafana Using Helm
+1. helm repo add grafana https://grafana.github.io/helm-charts
+2. helm repo update
+3. `helm fetch harbor/harbor --untar`, this generates a grafana directory with the "values.yml" file
+4. Edit the values file with values you want, I added the ingress info
+5. `helm install grafana grafana -n project`
+
+#### Login and create charts
+* `helm install grafana grafana -n project ` to get instructions to login if you didn't read them when installation completed
+* I got this command to get my password `kubectl get secret --namespace project grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo` using admin username
+* Go to "connections/add new connection" section, search and add "redis" on right top when it is installed click "add new data source" 
+
+Follow [official documentation](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/), I decided to use yaml scripts to install it but you can use a helm chart. So once you copy the files just run `kubectl create -f <file_name>` for each of them
+
+
+
+
 ## Debugg the cluster
 
-kubectl exec -ti sopesredis-6c79dcc5d4-vfqst -n project -- sh
+### Redis
+
+kubectl exec -ti sopesredis-88cb8fb76-qwklc -n project -- sh
 redis-cli
 keys *
 JSON.GET region $
 JSON.GET region $.METROPOLITANA
 flushdb
+ACL LIST
+JSON.OBJKEYS Ingenieria . $
+JSON.ARRLEN Ingenieria $.*
+JSON.ARRLEN Ingenieria Civil $
+JSON.ARRLEN Ingenieria Civil
+JSON.ARRLEN Ingenieria $.Civil
 .....etc
 
+### Mongo
 
-kubectl exec -ti sopesmongo-7567f8cc85-xl29g -n project -- bash
-mongosh
-show dbs
-use Course
-db.Assignations.find()
+kubectl exec -ti sopesmongo-7567f8cc85-jpsqg -n project -- bash
+mongosh                       // start mongosh cli
+show dbs                      // show databases
+use Course                    // selects database
+db.Assignations.find()        // shows all 
+db.dropDatabase()             // clears all values in selected db
 
+### Kafka consumer
 
 kubectl logs sopeskafkaclient-6bc7c96454-phqzd -f -n project
 
+### Deployments Containers
+Each deployment is assigned a default container and we can get logs as usual
 
+`kubectl logs <pod_name> -n project`
 
+ But to get logs of other containers in the deployment attach a `-c <contatiner_name>`
 
+`kubectl logs <pod_name> -c <container_name> -n project`
 
 
 mongo and redis doesn't have to be exposed they can be just set up with a port forward in Kubernetes so they can be reached within the network
@@ -1038,7 +1089,7 @@ kubectl expose deployment gotest-d --name=gotest-s --port=80 --target-port=8000 
 
 kubectl create ingress goingress --class=default --rule="foo.com/path*=svc:8080" --dry-run -o yaml > ingress.yaml
 
-curl --insecure https://34.174.102.23.nip.io/course \
+curl https://34.174.102.23.nip.io/course \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
