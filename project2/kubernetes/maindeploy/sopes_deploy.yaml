@@ -23,7 +23,7 @@ spec:
       - image: core.harbor.sopes/sopes1/clientgrpc
         name: clientgrpc
         ports:
-        - containerPort: 8000
+          - containerPort: 8000
         resources:
           requests:
             memory: "120Mi"
@@ -47,7 +47,7 @@ spec:
       - image: core.harbor.sopes/sopes1/servergrpc
         name: servergrpc
         ports:
-        - containerPort: 8010
+          - containerPort: 8010
         resources:
           requests:
             memory: "120Mi"
@@ -67,7 +67,7 @@ spec:
       - image: core.harbor.sopes/sopes1/redisclient
         name: redisclient
         ports:
-        - containerPort: 8020
+          - containerPort: 8020
         resources:
           requests:
             memory: "120Mi"
@@ -84,6 +84,16 @@ spec:
             value: "sopesredis.project.svc"
           - name: RUST_REDIS_PORT
             value: "6379"
+          - name: REDIS_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: user
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: password
       imagePullSecrets:
       - name: harbor-cred
 
