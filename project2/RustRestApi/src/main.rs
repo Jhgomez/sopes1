@@ -20,7 +20,9 @@ async fn hello() -> impl Responder {
 #[post("/course")]
 async fn course(course: web::Json<Course>) -> impl Responder {
     let redis_url = format!(
-        "redis://{}:{}/",
+        "redis://{}:{}@{}:{}/",
+        env::var("REDIS_USERNAME").unwrap(),
+        env::var("REDIS_PASSWORD").unwrap(),
         env::var("RUST_REDIS_HOST").unwrap(),
         env::var("RUST_REDIS_PORT").unwrap()
     );
