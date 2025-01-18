@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sopeskafkaclient
+  name: sopeskafkaclient
+  namespace: project
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sopeskafkaclient
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sopeskafkaclient
+    spec:
+      containers:
+      - image: core.harbor.sopes/sopes1/kafkaclient
+        name: kafkaclient
+        env:
+          - name: KAFKA_SERVER_HOST
+            value: "my-cluster-kafka-bootstrap.project.svc"
+          - name: KAFKA_SERVER_PORT
+            value: "9092"
+          - name: MONGO_SERVER_HOST
+            value: "sopesmongo.project.svc"
+          - name: MONGO_SERVER_PORT
+            value: "27017"
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "150m"
+          limits:
+            memory: "300Mi"
+            cpu: "300m"
+      imagePullSecrets:
+      - name: harbor-cred
+status: {}
+
+# my-cluster-kafka-bootstrap.project.svc:9092` if not `my-cluster-kafka-bootstrap:9092`

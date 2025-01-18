@@ -75,7 +75,9 @@ These are some Docker commands you might need
 * Forces removal of specific image:  `docker rmi -f <<id image>>` 
 * List volumes: `docker volume ls`
 * Create a volume: `docker volume create <name>`
-* docker-compose up -d --force-recreate --build
+* `docker-compose up -d --force-recreate --build`
+* `docker history --no-trunc=true <image_name> > <file_name>`: this gets the docker command history written in the file name given
+* `docker run --entrypoint '' --rm -it <image_name> /bin/sh`: This could helps us debug an image, basically we pass an empty entry point and then we execute the shell with the last command `/bin/sh` it could be /bin/bash`, after this we could try things like get the file address of a binary like `which curl` or `which java`, etc
 
 
 ## Installing in Ubuntu
@@ -155,6 +157,8 @@ If dockerfile is in the directory just put a "." in pack to dockerfile
 #### Run containers
 
 `docker run -p <local_host_port>:<container_port> <image_tag_name>`
+
+`docker run -it -p <local_host_port>:<container_port> <image_tag_name> [bin/bash | bin/sh]`: this creates a container mapping indicated ports running interactively the command at the end, in this case launching the shell
 
 #### Use Docker Compose
 Centralize container configuration, creation and management, create a `docker-compose.yml`

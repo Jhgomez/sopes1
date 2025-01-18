@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sopesmongo
+  name: sopesmongo
+  namespace: project
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sopesmongo
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sopesmongo
+    spec:
+      containers:
+      - image: mongo:8.0.4
+        name: mongo
+        ports:
+        - containerPort: 27017
+        resources:
+          requests:
+            memory: "120Mi"
+            cpu: "170m"
+          limits:
+            memory: "370Mi"
+            cpu: "320m"
+        volumeMounts:
+        - mountPath: /data/db
+          name: mongo-data
+      volumes:
+      - name: mongo-data
+        persistentVolumeClaim:
+          claimName: mongo-pvc
+
+status: {}

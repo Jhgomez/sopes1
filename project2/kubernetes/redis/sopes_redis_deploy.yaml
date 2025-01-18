@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sopesredis
+  name: sopesredis
+  namespace: project
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sopesredis
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sopesredis
+    spec:
+      containers:
+      - image: redis:8.0-M02-alpine3.20
+        name: redis
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "125m"
+          limits:
+            memory: "200Mi"
+            cpu: "250m"
+        command: ["redis-server", "/redis-master/redis.conf"]
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - mountPath: /redis-master
+          name: config
+      volumes:
+        - name: config
+          configMap:
+            name: sopes-redis-config
+            items:
+            - key: redis-config
+              path: redis.conf
+      
+status: {}

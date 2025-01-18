@@ -200,7 +200,7 @@ An example of different clouds is: In a university students data lives in a priv
 #### Software
 Software like OpenStack, VMWare ESXI and Open Nebula and many more are used for creating clouds.
 
-# Class 6
+# Class 6(12/10/24)
 
 ## Containers Advantages
 
@@ -276,7 +276,7 @@ note: kubevirt provides virtualization API for Kubernetes, run and manage virtua
 16. For fun lets replicate our docker-hub registry to this private one. In Harbor go to "Registries", click "New Endpoint", enter the info required and create a "replication rule", you might need to select "pull based" in your rule
 
 
-# Class 7
+# Class 7(11/12/24)
 Non-functional attributes, system attributes
 
 ## Golden Metrics
@@ -288,7 +288,9 @@ In class we made and example of configuring Grafana with MySQL using docker comp
 
 2. get the info, use `ps -aux` to see resource usage by process and do `ps -ax | awk '{print $1,$4} | tail -5' this will print last 5 processes number and the command it is executing
 
-# Class 8
+# Class 8(12/12/24)
+We saw a little harbor and oras at first
+
 ## Processes
 In SO GNU/Linux we can find the processes info in "/proc", a directory is created for each process ID, so basically a list of processes ID. A host can monitor/see a guest processes info. You can enter a process directory and check more file with the process info there, like "statm" which is the memory used by the process
 
@@ -336,7 +338,7 @@ The structure that manages process in C is called PCB, is used to manage their l
 * Priority
 * State
 
-# Class 10
+# Class 10 (13/12/24)
 
 ## Parallelism and Concurrency
 
@@ -344,16 +346,19 @@ The structure that manages process in C is called PCB, is used to manage their l
 Just one program executes in a process at a time
 
 ### Multiprogramming(Paralel/Asynchronous)
-Programs alternates execution over the same process, it looks like they being executed separately however they are in the same process acutally
+Programs alternates execution over the same process, it looks like they being executed separately however they are in the same process acutally. Asynchronous programming is more like a model, it is used to achieve concurrency. Asynchronous model describes that a process can execute other tasks/computations while a long running task is running in the background(like reading/writing a file or a DB) and when it is completed continue executing the next tasks, so basically asynchronous programming is used to achive concurrency
 
 ### Concurrency
 Several programs exists at the same time but only one is executed, most of the times means there is only one CPU
 
 #### Inheritably and Potential Concurrency
-Inheritably when they are forcibly executing actions simultaneously due to the nature of its environment, cashiers. Doesn't need to  be concurrent but it will benefit the system to speed up cexecution  
+Inheritably when they are forcibly executing actions simultaneously due to the nature of its environment, cashiers. Doesn't need to  be concurrent but it will benefit the system to speed up execution.
 
 ### Parallelism
-Exists more than one CPU so more than one program is executed at the same time. Is a particular case of concurrency, basically two or more concurrency executions are happening. Multiprocessors are needed to use parallelism
+Exists more than one CPU so more than one program is executed at the same time. Is a particular case of concurrency, basically two or more concurrency executions are happening. Multiprocessors are needed to use parallelism. Basically is a way to achieve concurrency
+
+### Concurrency vs Asynchrony vs Parallelism
+To achieve concurrency we only need one or more computational resources, if there is only one computational resources we need to execute tasks asynchronously to achieve concurrency. If we two or more computational resources we can either execute tasks in parallel to achieve concurrency and/or combine parallelism and asynchronous execution to achieve greater concurrency
 
 The scheduler is in charge of deciding what and how processes will be executed on CPU
 
@@ -374,7 +379,7 @@ Happens when process a is talking to process b and process c is talking to d, if
 
 If any of the above are false tbe it could be that a very odd situation is happening, called indefinite postergation which means the resources could be free up sometime later
 
-# Class 11
+# Class 11 (16/12/24)
 Teacher was not recording the class so I couldn't know what he talked about first.
 
 It is possible through google's cloud service called GKE. Is under the "Kubernetes engine" and "Clusters". Remember to apply an all in all out firewall rule. If you want to run it from your local machine first install google cloud SDK and then install "kubectl", kubectl credentials are in Clusters>MyCLuster>Details>Show Cluster Certificate
@@ -417,7 +422,7 @@ It will contain an Nginx POD, Nginx is a web server, load balancer, etc. Be awar
 6. `kubectl get nodes -o wide`: shows IP and more
 7. `kubectl describe nodes <node_name> | grep  ExternalIP`
 
-Just to test the default clusterIP service just do step 1 to 3 and then run this other image which is available in Docker Hub and is called "alpine/curl". So this pod will have an instance of this image
+Just to test the default clusterIP service just do step 1 to 3. In step 1 change image to "alpine/curl". So this pod will have an instance of this image that has the curl program installed. We will try to connect to the service `mipod-svc` from this other pod we are creating below
 
 1. `kubectl run -it curl --rm --image=alpine/curl \ --curl http://mipod-svc --restart=Never -- curl http://mipod-svc`: the `--` at the end indicates a command we can execute we could access the pod using `/bin/[bash/sh]` but since we have the curl program in this image we will run it using the mipod 3alias to connect to the other pod, just like in docker when we connect to another container inside the same docker network, either the default or a custom one, we can use the container name to connect to it without using its IP address specifically.
 2. `kubectl get pods -n kube-system`: you can see the DNS registry there, called "kube-dns" it is in charge to manage the inner network DNS names
@@ -956,7 +961,7 @@ RUN mv oras-install/oras /usr/local/bin/
 RUN rm -rf oras_${VERSION}_*.tar.gz oras-install/
 ```
 
-* build the image `docker build -t <user>/<name/tag>`
+* build the image `docker build -t <user>/<name/tag> .`
 * push image `docker push <user>/<name>`
 * From the prev commands we can see that the deployment file will change, the image will not be the oras image we used in previous class
 
@@ -1099,7 +1104,7 @@ status
 * `kubectl run terminal --image=busybox --restart=Never --rm -it -n <namespace_name> -- sh`
 * `kubectl run -it curl --rm --image=alpine/curl \ --restart=Never -- curl http://<>`: the last parameter is a command that will run on the command line of the container
 
-# Class 14 
+# Class 14 (12/19/24)
 
 ## Helm
 Helps us install packages, we can think of it as the Ubuntu's "apt" but in Kubernetes, we can used existing packags or we can build custom ones. 
@@ -1114,16 +1119,17 @@ https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 Taken from [official docu](https://helm.sh/docs/intro/install)
 
 ## Helm + Nginx Ingress
-We're  going to use an ingress controller to be able to use domain name. Ingress controller helps us set up a load balancer and assign it a domain name. This load balancer is shared because load balancers only allows traffic through prot 80 and 443, only http and https traffic. Controller would by some sort of driver and Ingress uses this driver like component
+We're  going to use an ingress controller to be able to use domain name. Ingress controller helps us set up a load balancer and assign it a domain name. This load balancer is shared because load balancers only allows traffic through port 80 and 443, only http and https traffic. Controller would be some sort of driver and Ingress uses this driver like component
 
 ## Commands to install Ingress Controller
 * `kubectl create ns nginx-ingress`: create a namespace
-* `helm repo add ingress-nginx https://kubernetes.github.io/ingres-nginx`: similar to adding a source in apt
+* `helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx`: similar to adding a source in apt
 * `helm repo update`
-* `helm install nginx-ingress ingress-nginx/ingress-nginx -n nginx-ingress`/`helm install <give_installation_a_name> <repo>/<file> -n <middle_component_installs_with_intallation_name_in_the_specified_name>`
+* `helm install nginx-ingress ingress-nginx/ingress-nginx -n nginx-ingress`/`helm install <give_installation_a_name> <repo>/<file> -n <middle_component_installs_with_intallation_name_in_the_specified_name_space>`
 * `helm list -n nginx`
 * `helm uninstall nginx-ingress -n nginx-ingress`
 * `kubectl get services -n nginx-ingress`
+* `kubectl get ingressclass`: shows ingress controller info
 
 [source](https://kubernetes.github.io/ingress-nginx/deploy/#using-helm)
 
@@ -1251,12 +1257,22 @@ Redis is a key/value database
 
 * run redis on you computer with docker `docker run -it -d redis`
 * enter the redis container CLI `docker exec -it <container_id> /bin/bash`
+* execute command: `redis-cli`
 * We can run commands now like `set a 1`, remember is a key value so "a" is set to 1
 * `get a`
 * we can use HashTables to store values
-* `set studend1 juan`, `set studend2 pedro`, `set studend:1 juan`
-`set studend:1 juan`, `keys student:*`(gets all students but not the values, it shows the object name and the key), `set contador 1`, `INCR contador`(increments the variable), `keys *`, set an auto-expire key `EXPIRE contador 20`, see more commands in the official documentation. It is very common to use this as for caching info or info that is very volatile. Hashs tables alook like `HSET myhash field1 "juan"` or `HSET student-2 name "lucas"`, `HGETALL student-1`, `HGETALL student-1 name`
-* I can use the redis cli, once inside containers cli run `redis-cli`, try a `PUBLISH sopes1 hola`
+* `set studend1 juan`, `set studend2 pedro`
+* `set studend:1 juan` and `set studend:1 juan` and then `keys student:*`(gets all students but not the values, it shows the object name and the key), like how many student entries there are
+* `set contador 1`, `INCR contador`(increments the variable)
+* `keys *` this would returned all the previously defined keys, (a, student1, student2, student:1, student:2, contador) 
+* set an auto-expire key `EXPIRE contador 20` this key expires(dissapears) in 20 seconds, see more commands in the official documentation. 
+* It is very common to use this as for caching info or info that is very volatile. 
+* Hash tables look like `HSET <a_hash_code/a_key> <like_a_column_name> <the_value>`, so we could do an entrie like `HSET student-1 name "lucas"`, `HSET student-1 address "mixco"` and `HSET student-2 name "juan"`, `HSET student-2 address "miraflores"`.
+* `KEYS student-*` will print all "student-" keys ("student-1", and "student-2")
+* `HGETALL student-1` it will return all fields( "name" "lucas" "address" "mixco")
+* `HGETALL student-1 name` just returns the value of the specified field it prints "lucas"
+* I can use the redis cli, once inside container's cli run `redis-cli`, try chennels with: `SUBSCRIBE sopes1`, cli will enter to "subscribe mode". Open other terminal and enter the docker container `docker exec -it <container_id> /bin/bash`, run cli `redis-cli`, and now publish a message to the channel we just open with `PUBLISH sopes1 "hola"`
+* Kafka can do some channels also it can manange a message channels/queues but originally it was to manage files instead of messages so everything is actually handled as files but they are messages, RabitMQ is an alternative to Kafka
 * It can store bytes
 
 Valkey is a Redis fork
@@ -1406,6 +1422,33 @@ Lets us split network traffic. Look for "Injecting Faults" in Linkerd official d
 
 16. pending from 1:13:00, example was not finished
 
+# Class 17(26/12/24)
+We made the 2nd exam and teacher explained 2nd project
+
+## 2nd Project
+To install kafka use confluent libraries on the internet there is an example in go, we will be able to see there how to run Kafka queues. we can also check his repo called "CloudNativeNov2023" here we will see how go produces Kafka messages and the consumer which is based on confluent libraries. Use Strimzi to install Kafka, check their quick start documentation
+
+Grafana can be installed using his books repo called "Edge-Computing-Systems-with-Kubernetes" in chapter 11 just take off the volumes section on line 36. We can find a Redis example in chapter 10 and 11, preferably in chapter 10, just ignore volumes
+
+To create Grafana Plots/charts it might be best to use Redis Hash Tables because they can work like counters or we could have two variables, one is like a counter. For example each region, faculty, Assigned can have a hash table. Again use hash tables and counters, that should be all you need
+
+A good start would be installing Kubernetes, Harbor, then create an image in Kubernetes with the credentials to call the Harbor registry, this has to happen in a namespace, then create deployment. then install databases
+
+# Class 18(27/12/24)
+
+## Project 2
+Again we saw technologies we need in project 2. We saw how to configure Kafka in Kubernetes following Strimzi guidelines and using confluent libraries to configure the the producer and consumer in Golang. Then we saw hwo to configure a "secret" to be able to access private registry from Kubernetes official documentation [here](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-secret-by-providing-credentials-on-the-command-line). Teacher showed how to create a user and set the password of the user in Harbor to be able to execute the Kubernetes command that crates the secret key(01:00:00) and also after that showed what tags are needed to declare the secret in the container/pod level(imagePullSecrets:name). This was tested with a private image of an apache server(httpd), when the deployment is created and running we can check on our website the apache website included by default just listen to your local host in the por you define when you create the deployment using a port-forward Kubernetes service
+
+For final test go to uedi to "parcial 2: Procesos y concurrencia del 13 de diciembre ..." to file "Inter Process Communication(IPC)" page 14, 18 through the end of file. Producer, consumer, "deadlock(exclusion mutua) implementation" and traffic light(semaforo)
+
+Also for the final test read the document in "Final - Aplicacion de concurrencia ..." to file "Libro William - Stallings sobre procesos - Dekker ..", read dekker algorithms chapter 4/book's page 170
+
+Read about "Esquimales", "Filosofos Comensales" and "Barbero Dormilon", "Panaderia de Lamport", "Fumadores de cigarros". Just for the sake of knowledge see "yaeger" and "tracing(tracy)", Also read the "Node.js+MongoDB tecnologias de paralelismo" explains why the combination works great in social networks 
+
+Cloud native Guatemala official community https://community.cncf.io/cloud-native-guatemala/
+
+12 factor app
+
 ## Linkerd Commands
 * `linkerd uninstall | kubectl delete -f -`: uninstall linkerd
 
@@ -1427,3 +1470,5 @@ Lets us split network traffic. Look for "Injecting Faults" in Linkerd official d
 * `kubectl get all <-n <namespace_name>>(this is optional)`: returns all objects in a optionally specified namespace if not it could be the default or global namespace objects that will be returned
 * `kubectl get nodes`: returns kuberentes nodes names
 * `kubectl get nodes -o wide`: returns kuberentes nodes info like IP
+
+Service "project/d-api-rest-grpc" does not have any active Endpoint
