@@ -111,7 +111,9 @@ This node will be receiving courses using a Rust REST API
 3. Create the environment variables using `export`
 ```bash
 export RUST_SERVER_HOST=localhost \
-export RUST_SERVER_PORT=8020
+export RUST_SERVER_PORT=8020 \
+export REDIS_USERNAME=sopes \
+export REDIS_PASSWORD=sopes
 ```
 
 4. Run the server `cargo run`
@@ -141,7 +143,7 @@ RUST_REDIS_HOST=<kubernetesObjectTag>
 
 5. I can test it using Docker. I'm going to create a Redis database Docker container using the Bitmani's image, see [here](https://hub.docker.com/r/bitnami/redis) for info on how to set it up. Basically, assuming you have docker desktop installed and running, run bellow command(6379 is default port). optionally you can use the official [redis alpine version](https://github.com/docker-library/docs/tree/master/redis) with the image `redis:8.0-M02-alpine3.20`, the volume would be `-v /docker/host/dir:/data`
 ```bash
-docker run -rm -d -it \
+docker run --rm -d -it \
     --name=redis-server \
     -v redis-persistence:/data \
     -e REDIS_PASSWORD=course -e REDIS_MASTER_PASSWORD=course   \
@@ -848,14 +850,45 @@ Registries are evolving as generic artifact stores. ORAS is a technology that le
 
 7. To test this we could delete the json file and then run `oras pull --insecure 35.223.33.184.nip.io/sopes1/courses:latest`. (alternative) `oras pull --insecure core.harbor.sopes/sopes1/courses:latest`
 
+### Setting up Redis
+I followed the tutorial [https://kubernetes.io/docs/tutorials/configuration/configure-redis-using-configmap/] to configure redis. Grafana will require us to match a password, the default user name is "default" password is empty so we could actually connect just entering an empty password but I changed this behavior in the config file so we need to create a Kubernetes configmap and pass this configurations to redis container by mounting a volume in the right path. Just build all objects with `kubectl create -f <file_name>`. We could do these configurations by accessing the container cli and run `redis-cli` command to access redis and then use some of the following commands
+
+CONFIG GET requirepass                                            // for default user
+CONFIG SET requirepass "course"                                   // for default user, initial value is empty string ""
+CONFIG GET *                                                      // list of configurations
+AUTH <user_name> <password>                                       // authenticates user
+ACL LIST                                                          // see access list info, make sure user is on or user will not be able to authenticate
+ACL SETUSER sop on +@admin allcommands allkeys allchannels >sop   // see [here](https://redis.io/docs/latest/commands/acl-setuser/)
+
+I used this command to create the secret
+
+`kubectl create secret generic redis-secret --from-literal=user=sopes --from-literal=password=sopes -n project --dry-run=client -o yaml > user-secret.yaml`
+
+## Debugg the cluster
+
+kubectl exec -ti sopesredis-6c79dcc5d4-vfqst -n project -- sh
+redis-cli
+keys *
+JSON.GET region $
+JSON.GET region $.METROPOLITANA
+flushdb
+.....etc
+
+
+kubectl exec -ti sopesmongo-7567f8cc85-xl29g -n project -- bash
+mongosh
+show dbs
+use Course
+db.Assignations.find()
+
+
+kubectl logs sopeskafkaclient-6bc7c96454-phqzd -f -n project
 
 
 
 
 
 
-In the cluster configuration in GCP in the networks section remove "enable authorized networks"
-We can use Lens k8
 mongo and redis doesn't have to be exposed they can be just set up with a port forward in Kubernetes so they can be reached within the network
 
 
@@ -881,6 +914,8 @@ KAFKA_SERVER_PORT=9092
 # this is the redis_client:
 RUST_SERVER_HOST=<kubernetesObjectTag>
 RUST_SERVER_PORT=8020
+REDIS_USERNAME=sopes
+REDIS_PASSWORD=sopes
 
 RUST_REDIS_HOST=<kubernetesObjectTag>
 RUST_REDIS_PORT=6379
@@ -896,6 +931,8 @@ export GRPC_SERVER_HOST=localhost \
 export GRPC_SERVER_PORT=8010 \
 export RUST_SERVER_HOST=localhost \
 export RUST_SERVER_PORT=8020 \
+export REDIS_USERNAME=sopes \
+export REDIS_PASSWORD=sopes \
 export RUST_REDIS_HOST=localhost \
 export RUST_REDIS_PORT=6379 \
 export KAFKA_SERVER_HOST=localhost \
@@ -927,7 +964,7 @@ curl http://localhost:8000/course \
     --data '{"curso": "ANP", "facultad": "Ingenieria", "carrera": "Civil", "region": "METROPOLITANA"}'
 
 
--e GRPC_CLIENT_HOST=localhost -e GRPC_CLIENT_PORT=8000 -e GIN_MODE=release -e GRPC_SERVER_HOST=localhost -e GRPC_SERVER_PORT=8010 -e KAFKA_SERVER_HOST=localhost -e KAFKA_SERVER_PORT=9092 -e RUST_SERVER_HOST=localhost -e RUST_SERVER_PORT=8020 -e RUST_REDIS_HOST=localhost -e RUST_REDIS_PORT=6379 -e MONGO_SERVER_HOST=localhost -e MONGO_SERVER_PORT=27017
+-e GRPC_CLIENT_HOST=localhost -e GRPC_CLIENT_PORT=8000 -e GIN_MODE=release -e GRPC_SERVER_HOST=localhost -e GRPC_SERVER_PORT=8010 -e KAFKA_SERVER_HOST=localhost -e KAFKA_SERVER_PORT=9092 -e RUST_SERVER_HOST=localhost -e REDIS_USERNAME=sopes -e REDIS_PASSWORD=sopes -e RUST_SERVER_PORT=8020 -e RUST_REDIS_HOST=localhost -e RUST_REDIS_PORT=6379 -e MONGO_SERVER_HOST=localhost -e MONGO_SERVER_PORT=27017
 
 
 
@@ -1001,7 +1038,7 @@ kubectl expose deployment gotest-d --name=gotest-s --port=80 --target-port=8000 
 
 kubectl create ingress goingress --class=default --rule="foo.com/path*=svc:8080" --dry-run -o yaml > ingress.yaml
 
-curl http://34.174.102.23.nip.io/course \
+curl --insecure https://34.174.102.23.nip.io/course \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
@@ -1049,14 +1086,6 @@ Check [this guide[(https://cert-manager.io/docs/installation/kubectl/#uninstalli
 
 
 golang goa vs openapi(code generator/design first APIs) an alternative to code first libraries like gin or gorilla
-
-
-
-
-
-
-
-
 
 
 
@@ -1203,5 +1232,11 @@ DNS.2 = host2
 
 
 addonmanager.kubernetes.io/mode: EnsureExists
+
+
+## Interesting Kubernetes commands
+
+kubectl get svc s-api-rest-grpc -n project -o yaml
+
 
 
