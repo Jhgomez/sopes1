@@ -1,12 +1,8 @@
 # Description
-In this project we are going to use Locust(python library) to send traffic to a Kubernetes Ingress controller which
-is a Kubernetes service that has Linkerd installed, we will configure 2 routes using Linkerd, each will receive 50% 
-of the traffic, both will transfer data to a database. First route will be sending traffic to a gRCP client written 
-in Golang that sends it to a gRCP server written in Golang as well, this server has a connection to a Mongo data base
-and writes it. Second route is written in Rust, is server that is connected to a redis and the mongo database it writes
-the information received to both databases. Each of these 'routes' will be a Kubernetes deployment object, and will have
-a minimun of 1 and maximun of 3 replicas and the CPU usage should not be more than 50%. The data that is going to be 
-transmitted is collegue students notes, so we will display those notes by connecting a Grafana server to the databases 
+In this project we are going to use Locust(python library) to send traffic to a Kubernetes Ingress controller(Nginx server) which uses a Kubernetes Ingress object to direct traffic to a service. The service then routes traffic to a gRCP client written 
+in Golang that sends it to a gRCP server written in Golang as well, this server is a Kafka producer that sends messages to a Kafka broker/operator, another Kubernetes deployment will then have a kafka client written in Golang and will also be a Mongo client that send info to a Mongo database.The gRPC client will also make an http post to a REST API written in Rust which is also a redis client and sends the info to this Database and finally grafana connects to the database to display info.
+
+Harbor and Grafana will be installed using Helm to be able to set up https traffic and authentication more easily and then, they will have their own ingress that also uses Nginx ingress controller, in total the ingress controller along with three ingress objects will route traffic to three different services, all other services will be exposing Kubernetes deployments internally only.
 
 # Instructions
 
@@ -49,7 +45,7 @@ If you see the oras code there, you can comment it out and when we set up Harbor
 Basically both are server but the one in the middle is both, client and REST API server. The one that will receive requests from the ingress controller is both. It is an REST API server because it has an 'endpoint' that recieves the grade from Locust that is sending posts request to the it and is a client because it then forwards the information to the following container which is another gRCP server but this one is connected to the Mongo database. We will be using [gRPC's official documentation](https://grpc.io/docs/languages/go/basics/) to create a service in Golang
 
 #### Create REST API-gRPC Client Server
-We'll follow [official documentation]{https://go.dev/doc/tutorial/web-service-gin} tutorial to create the REST API using Golang. We assume you've installed Golang
+We'll follow [official documentation](https://go.dev/doc/tutorial/web-service-gin) tutorial to create the REST API using Golang. We assume you've installed Golang
 
 1. Create Golang module in the directory where your service code will live, run `go mod init grades/rest-service`
 
@@ -161,14 +157,12 @@ redis-cli  # access redis CLI to interact with Redis server
 
 6. Bellow is the logic using Redis commands to insert and read the info to and from Redis
 
+```
 // ---- Counters ---- //
-
 
 INCR Regioncounter
 INCR {facultad}counter
 INCR {curso}counter
-
-
 
 // ---- inserts ---- //
 
@@ -180,8 +174,6 @@ JSON.ARRAPPEND {facultad} $.{carrera} {object}
 
 //////***** By Curso and Carrera *****////////
 JSON.ARRAPPEND {Curso} $.{carrera} {object}
-
-
 
 // ---- gets(get length of each array) ---- //
 
@@ -200,11 +192,8 @@ JSON.ARRLEN {Curso} $.{carrera} // try this per facultad and carrera
 // or
 JSON.ARRLEN {Curso} '$.[*]' // get length of all sections in this object
 
-
-
-
 // --- Initialization commands --- //
-We would have to figure out a way to do this just once but for the project it is fine to do this when rust server is initialized, in a real life scenario we could do it with a init container maybe 
+I will to check if the keys exist and if not initialize them in the function handling http requests as Json keys don't work same way as normal key for the project it is fine to do this when rust server is initialized, in a real life scenario we could do it with a init container maybe 
 
 JSON.SET region $ '{"METROPOLITANA":[], "NORTE":[], "NORORIENTAL":[], "SURORIENTAL":[], "CENTRAL":[], "SUROCCIDENTAL":[], "NOROCCIDENTAL":[], "PETEN":[]}'
 
@@ -225,7 +214,7 @@ JSON.SET OLC2 $ `{"Sistemas":[], "Industrial":[], "Quimica":[], "Civil":[]}`
 JSON.SET PA2 $ `{"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]}` 
 
 JSON.SET PED $ `{"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]}` 
-
+```
 
 
 #### Set up Kafka Producer and Consumer
@@ -261,24 +250,20 @@ The MongoDB Go driver needs instructions on where and how to connect to your Mon
 | Row           |          Document             |
 | Column        |          Field                |
 
-In our case we just need to start a MongoDB server, while developing you can do that using Docker but we will do this using Kubernetes when deploying the app. Once it is started we can just talk to it using the client, at this moment no Database exists yet other than the default one called "test" so in order to create one just start making queries, if you do a create query of a document to a db and collection that doesn't exist the db and collection will be created ant the document will be stored in it.
+In our case we just need to start a MongoDB server, while developing you can do that using Docker but we will do this using Kubernetes when deploying the app. Once it is started we can just talk to it using the client, at this moment no Database exists yet other than the default one called "test" so in order to create one just start making queries, if you do a create query of a document to a db and collection that doesn't exist the db and collection will be created ant the document will be stored in it. Bellow is a list of official documentation that will be helpful to understand more about mongo
 
-https://www.mongodb.com/docs/drivers/go/current/
-https://www.mongodb.com/resources/languages/golang
-https://www.mongodb.com/docs/atlas/   # for GCP
-https://www.mongodb.com/resources/languages/golang  # get started
-https://www.mongodb.com/docs/drivers/go/current/quick-start/  # quick start
-https://www.mongodb.com/resources/products/compatibilities/docker  # docker get started
-https://github.com/mongodb/mongo-go-driver/blob/master/mongo/database.go#L48  # documentation
-running mongodb as a microservice with docker and Kubernetes # navigator search
-https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo
+* [Quick start with go mongo driver](https://www.mongodb.com/docs/drivers/go/current/quick-start/)
+* [Golang & Mongodb](https://www.mongodb.com/resources/languages/golang)
+* [For GCP](https://www.mongodb.com/docs/atlas/)
+* [Get started](https://www.mongodb.com/resources/languages/golang)
+* [Docker get started](https://www.mongodb.com/resources/products/compatibilities/docker)
+* [Documentation
+running mongodb as a microservice with docker and Kubernetes # navigator search](https://github.com/mongodb/mongo-go-driver/blob/master/mongo/database.go#L48)
+* [go mongo client library](https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo)
 
-docker run -it --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server:7.0.6-ubi9           mongosh
-
-or
-
-docker run --name mongo -d -p 27017:27017 mongo:8.0.4
-
+##### Run Docker Mongo Container
+* `docker run -it --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server:7.0.6-ubi9 sh` or `docker run --name mongo -d -p 27017:27017 mongo:8.0.4`
+* `docker exec -it mongodb sh` and then run * `mongosh` command
 
 ## Install gcloud CLI and Kubectl
 I followed [this documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) to install kubectl. I used the [official documentation](https://cloud.google.com/sdk/docs/install) and [this guide](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) to install "gcloud CLI", this is a [gcloud CLI cheat sheet](https://cloud.google.com/sdk/docs/cheatsheet).
@@ -357,11 +342,14 @@ I will follow the [official documentation](https://goharbor.io/docs/2.12.0/insta
 
 Here is a very interesting [document](https://www.michalklempa.com/2023/03/combining-docker-images/) explaining what multi-layer docker images are and how we can inspect images further. `docker history --no-trunc=true <image_name> > <file_name>`, this gets the docker command history written into the file name given. `docker run --entrypoint '' --rm -it <image_name> /bin/sh`: This could helps us debug an image, basically we pass an empty entry point and then we execute the shell with the last command `/bin/sh` it could be /bin/bash`, after this we could try things like get the file address of a binary like `which curl` or `which java`, etc. To build all images I went to through their official repo
 
+You have to check Hub.Docker to get the image you want and then usually go to their github repo and see how you an build a Docker file once the Dockerfile is generated just build the image with `docker build Dockerfile .`. Be aware I had to build my gRPC client image with the following code `docker build -f client/Dockerfile -t grpc_client .`
+
 ### List of containers ports
-This is a list of the ports that our images are exposing. Be aware I had to build my gRPC client image with the following code `docker build -f client/Dockerfile -t grpc_client .`
+This is a list of the ports that our images are exposing. 
 
 1. gRPC client: 8000
-2. 
+2. gRPC server:
+3
 
 
 ## Setting up Kubernetes
@@ -471,6 +459,9 @@ gcloud container clusters describe regix \
 ### Special Section, "what do these configs actually do?"
 From [here](https://cloud.google.com/kubernetes-engine/docs/how-to/access-private-registries-private-certificates) I found the following info [here](https://github.com/containerd/containerd/blob/main/docs/hosts.md#hoststoml-content-description---detail)
 
+The following was found in ContainerD's offical github repo:
+
+```
 Bypass TLS Verification Example in Containerd
 To bypass the TLS verification for a private registry at 192.168.31.250:5000
 
@@ -502,6 +493,7 @@ version = 2
    config_path = "/etc/containerd/certs.d"
 
 However they are now moved to a file called /etc/containerd/certs.d as mentioned [here](https://github.com/containerd/containerd/issues/9199)
+```
 
 We could have done this manually somehow but it is better to do it using google configs
 
@@ -582,8 +574,9 @@ Install it using the [official documentation](https://helm.sh/docs/intro/quickst
 #### Set up a Nginx Controller using Helm
 Following [this documentation](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) will direct you [here](https://kubernetes.github.io/ingress-nginx/deploy/). We will use this controller to be able to expose the cluster with a DNS address and direct traffic to a Kubernetes object called Ingress, the controller is a load balancer. It only allows http and https traffic through port 80 and 443. We are basically following the sintax in [this section](https://kubernetes.github.io/ingress-nginx/deploy/#ovhcloud)
 
-# 1. `kubectl apply -f https://raw.githubusercontent.com/nginxinc/kubernetes-ingress/v4.0.0/deploy/crds.yaml`: Installs CRDs
-# 2. (optional) `kubectl delete -f crds/`: If you need to uninstall CRDs
+* (Ignore) `kubectl apply -f https://raw.githubusercontent.com/nginxinc/kubernetes-ingress/v4.0.0/deploy/crds.yaml`: Installs CRDs
+
+* (Ignore) `kubectl delete -f crds/`: If you need to uninstall CRDs
 
 1. `helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx`: adds a repo to helm, it is similar to adding a source in Ubuntu's advanced package tool(apt), which is the Ubuntu's package manager
 
@@ -896,60 +889,55 @@ Using the private CA I created in [this section](#using-elliptic-curve-dey-algor
 
 Follow [official documentation](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/), I decided to use yaml scripts to install it but you can use a helm chart. So once you copy the files just run `kubectl create -f <file_name>` for each of them
 
-
-
-
 ## Debugg the cluster
 
 ### Redis
 
-kubectl exec -ti sopesredis-88cb8fb76-qwklc -n project -- sh
-redis-cli
-keys *
-JSON.GET region $
-JSON.GET region $.METROPOLITANA
-flushdb
-ACL LIST
-JSON.OBJKEYS Ingenieria . $
-JSON.ARRLEN Ingenieria $.*
-JSON.ARRLEN Ingenieria Civil $
-JSON.ARRLEN Ingenieria Civil
-JSON.ARRLEN Ingenieria $.Civil
-.....etc
+* `kubectl exec -ti sopesredis-88cb8fb76-qwklc -n project -- sh`
+* `redis-cli`
+* `keys *`
+* `JSON.GET region $`
+* `JSON.GET region $.METROPOLITANA`
+* `flushdb`
+* `ACL LIST`
+* `JSON.OBJKEYS Ingenieria . $`
+* `JSON.ARRLEN Ingenieria $.*`
+* `JSON.ARRLEN Ingenieria Civil $`
+* `JSON.ARRLEN Ingenieria Civil`
+* `JSON.ARRLEN Ingenieria $.Civil`
+* .....etc
 
 ### Mongo
 
-kubectl exec -ti sopesmongo-7567f8cc85-jpsqg -n project -- bash
-mongosh                       // start mongosh cli
-show dbs                      // show databases
-use Course                    // selects database
-db.Assignations.find()        // shows all 
-db.dropDatabase()             // clears all values in selected db
+* `kubectl exec -ti sopesmongo-7567f8cc85-jpsqg -n project -- bash`
+* `mongosh`                       // start mongosh cli
+* `show dbs`                      // show databases
+* `use Course`                    // selects database
+* `db.Assignations.find()`        // shows all 
+* `db.dropDatabase()`             // clears all values in selected db
 
 ### Kafka consumer
 
-kubectl logs sopeskafkaclient-6bc7c96454-phqzd -f -n project
+* `kubectl logs sopeskafkaclient-6bc7c96454-phqzd -f -n project`
 
 ### Deployments Containers
 Each deployment is assigned a default container and we can get logs as usual
 
-`kubectl logs <pod_name> -n project`
+* `kubectl logs <pod_name> -n project`
 
  But to get logs of other containers in the deployment attach a `-c <contatiner_name>`
 
-`kubectl logs <pod_name> -c <container_name> -n project`
+* `kubectl logs <pod_name> -c <container_name> -n project`
 
 
 mongo and redis doesn't have to be exposed they can be just set up with a port forward in Kubernetes so they can be reached within the network
 
-
-
-`kubectl config set-context --current --namespace=<namespace_name>`
-
 ## Set up Grafana
-`docker run -d --name=grafana -p 3000:3000 grafana/grafana`
+* `docker run -d --name=grafana -p 3000:3000 grafana/grafana` if you want to test a local container
 
+## List of Environment Variables
 
+```
 GRPC_CLIENT_HOST=<kubernetesObjectTag>
 GRPC_CLIENT_PORT=8000 
 GIN_MODE=release
@@ -992,44 +980,34 @@ export MONGO_SERVER_HOST=localhost \
 export MONGO_SERVER_PORT=27017
 ```
 
-        env:
-          - name: SPRING_PROFILES_INCLUDE
-            value: "kubernetes"
-          - name: SPRING_PROFILES_INCLUDE
-            value: "kubernetes"
-          - name: SPRING_PROFILES_INCLUDE
-            value: "kubernetes"
-          - name: SPRING_PROFILES_INCLUDE
-            value: "kubernetes"
-          - name: SPRING_PROFILES_INCLUDE
-            value: "kubernetes"
-          - name: SPRING_PROFILES_INCLUDE
-            value: "kubernetes"
-          - name: SPRING_PROFILES_INCLUDE
-            value: "kubernetes"
-
+## Make a local post to gRPC client:
+```
 curl http://localhost:8000/course \
     --include \
     --header "Content-Type: application/json" \
     --request "POST" \
     --data '{"curso": "ANP", "facultad": "Ingenieria", "carrera": "Civil", "region": "METROPOLITANA"}'
+```
 
+This can be included when running docker images locally
 
--e GRPC_CLIENT_HOST=localhost -e GRPC_CLIENT_PORT=8000 -e GIN_MODE=release -e GRPC_SERVER_HOST=localhost -e GRPC_SERVER_PORT=8010 -e KAFKA_SERVER_HOST=localhost -e KAFKA_SERVER_PORT=9092 -e RUST_SERVER_HOST=localhost -e REDIS_USERNAME=sopes -e REDIS_PASSWORD=sopes -e RUST_SERVER_PORT=8020 -e RUST_REDIS_HOST=localhost -e RUST_REDIS_PORT=6379 -e MONGO_SERVER_HOST=localhost -e MONGO_SERVER_PORT=27017
+`-e GRPC_CLIENT_HOST=localhost -e GRPC_CLIENT_PORT=8000 -e GIN_MODE=release -e GRPC_SERVER_HOST=localhost -e GRPC_SERVER_PORT=8010 -e KAFKA_SERVER_HOST=localhost -e KAFKA_SERVER_PORT=9092 -e RUST_SERVER_HOST=localhost -e REDIS_USERNAME=sopes -e REDIS_PASSWORD=sopes -e RUST_SERVER_PORT=8020 -e RUST_REDIS_HOST=localhost -e RUST_REDIS_PORT=6379 -e MONGO_SERVER_HOST=localhost -e MONGO_SERVER_PORT=27017`
 
-
+## Randm Notes
 
 * Google sign in is now FedCM(federated credential management)
 
 * Admission webhooks, or webhooks in Kubernetes, are a type of admission controller, which can be used in Kubernetes clusters to validate or mutate requests to the control plane prior to a request being persisted.
 
-helm upgrade --install ingress-nginx ingress-nginx \
-  --repo https://kubernetes.github.io/ingress-nginx \
-  -n project
 
-### Uninstall Nginx-controller completely
+`helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  -n project`
+
+## Uninstall Nginx-controller completely
 To completely delete Nginx-controller from a Kubernetes cluster delete all nodes in of the following types called `ingress-nginx`
 
+```
 pod
 svc
 deployment
@@ -1037,57 +1015,10 @@ clusterrolebinding
 clusterrole
 IngressClass
 ValidatingWebhookConfiguration
+```
 
 
-
-
-kubectl create ingress -s -n project --dry-run -o yaml > ingress.yaml
-
-
-# Create a single ingress called 'simple' that directs requests to foo.com/bar to svc
-  # svc1:8080 with a TLS secret "my-cert"
-  kubectl create ingress simple --rule="foo.com/bar=svc1:8080,tls=my-cert"
-
-  # Create a catch all ingress of "/path" pointing to service svc:port and Ingress Class as "otheringress"
-  kubectl create ingress catch-all --class=otheringress --rule="/path=svc:port"
-
-  # Create an ingress with two annotations: ingress.annotation1 and ingress.annotations2
-  kubectl create ingress annotated --class=default --rule="foo.com/bar=svc:port" \
-  --annotation ingress.annotation1=foo \
-  --annotation ingress.annotation2=bla
-
-  # Create an ingress with the same host and multiple paths
-  kubectl create ingress multipath --class=default \
-  --rule="foo.com/=svc:port" \
-  --rule="foo.com/admin/=svcadmin:portadmin"
-
-  # Create an ingress with multiple hosts and the pathType as Prefix
-  kubectl create ingress ingress1 --class=default \
-  --rule="foo.com/path*=svc:8080" \
-  --rule="bar.com/admin*=svc2:http"
-
-  # Create an ingress with TLS enabled using the default ingress certificate and different path types
-  kubectl create ingress ingtls --class=default \
-  --rule="foo.com/=svc:https,tls" \
-  --rule="foo.com/path/subpath*=othersvc:8080"
-
-  # Create an ingress with TLS enabled using a specific secret and pathType as Prefix
-  kubectl create ingress ingsecret --class=default \
-  --rule="foo.com/*=svc:8080,tls=secret1"
-
-  # Create an ingress with a default backend
-  kubectl create ingress ingdefault --class=default \
-  --default-backend=defaultsvc:http \
-  --rule="foo.com/*=svc:8080,tls=secret1"
-
-
-kubectl create deployment gotest-d --image=juan523/gotest --port=8000 --dry-run -o yaml > deploy.yaml
-
-kubectl expose deployment gotest-d
-
-kubectl expose deployment gotest-d --name=gotest-s --port=80 --target-port=8000 -n project --dry-run -o yaml > service.yaml
-
-kubectl create ingress goingress --class=default --rule="foo.com/path*=svc:8080" --dry-run -o yaml > ingress.yaml
+## Make Real Post Request to servers
 
 curl https://34.174.102.23.nip.io/course \
     --include \
@@ -1096,7 +1027,7 @@ curl https://34.174.102.23.nip.io/course \
     --data '{"curso": "SA", "facultad": "Ingenieria", "carrera": "Civil", "region": "METROPOLITANA"}'
 
 
-install certmanager
+## install certmanager
 I'll do what they call a static installation, you can modify this installation files or do a helm installation, using [this guide](https://cert-manager.io/docs/installation/). cert-manager mainly uses two different custom Kubernetes resources - known as CRDs - to configure and control how it operates, as well as to store state. These resources are Issuers and Certificates. We can see it is important to [use same namespace in this resources](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/#issuers). Issuers are namespace specific but if using ClusterIssuer(cluster wide), remember to update the Ingress annotation cert-manager.io/issuer to cert-manager.io/cluster-issuer
 
 * `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml`
@@ -1139,27 +1070,27 @@ Check [this guide[(https://cert-manager.io/docs/installation/kubectl/#uninstalli
 golang goa vs openapi(code generator/design first APIs) an alternative to code first libraries like gin or gorilla
 
 
-
-
 # Self-signed TLS Certificates
 
-## [first](https://dev.to/techschoolguru/how-to-create-sign-ssl-tls-certificates-2aai)
+## [First](https://dev.to/techschoolguru/how-to-create-sign-ssl-tls-certificates-2aai)(Preferred)
 This is great tutorial to follow as it uses an internal CA to issue internal certificates which is what is recommended as a best practice. However we will combine it with elliptic curve keys, which openssl can also generate. For that you can follow [this tutorial](https://www.geeksforgeeks.org/blockchain-creating-elliptic-curve-keys-using-openssl/). I decided to use those type of keys as they are supposedly more performant.
 
 * Generate a private key and its self-signed certificate for the CA. They will be used to sign the CSR later
-
+```
 openssl req -x509 -newkey rsa:4096 -days 365 -keyout ca-key.pem -out ca-cert.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik-tech/emailAddress=hg@icloud.com"
+```
 
 * Generate a private key and its paired CSR for the web server that we want to use TLS.
-
+```
 openssl req -newkey rsa:4096 -keyout server-key.pem -out server-req.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=okik.tech/emailAddress=hg@icloud.com"
+```
 
 * Use the CA’s private key to sign the web server’s CSR and get back the signed certificate
-
+```
 openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out server-cert.pem -extfile server-ext.cnf
 
 openssl x509 -in some-cert.pem -noout -text
-
+```
 
 ### Using Elliptic Curve Key Algorithm
 We will do same as above but using this other Algorithm
@@ -1197,66 +1128,63 @@ Using openssl you can do this with any of the format types extensions using open
 * DER files and extensions: `openssl x509 -text -noout -inform der -in CERTIFICATE.der`
 
 
-
-
-## [second](https://passwork.pro/blog/openssl/)
+## [Second](https://passwork.pro/blog/openssl/)
 
 * Generate a Public/Private keypair. 2048– key size
-
+```
 openssl genrsa - out passwork.key 2048
+```
 
 * extract the public key
-
+```
 openssl rsa -in passwork.key -pubout -out passwork_public.key
+```
 
 * proceed to creating a CSR In a real production scenario, such a CSR is forwarded to the CA which signs it on your behalf, so you get a certificate. we’ll create a CSR and self-sign it.
-
+```
 openssl req -new -key passwork.key -out passwork.csr
 
 openssl req -text -in passwork.csr -noout -verify
+```
 
 * create a self-signed certificate
-
+```
 openssl x509 -in passwork.csr -out passwork.crt -req -signkey passwork.key -days 30
+```
 
 
 
 
-
-## [third](https://dev.to/gauravgahlot/secure-your-kubernetes-applications-with-self-signed-certificates-jfj#:~:text=Following%20are%20the%20steps%20to%20generate%20the%20self-signed,req%20command%20with%20the%20-subj%20and%20-addext%20options%3A)
+## [Third](https://dev.to/gauravgahlot/secure-your-kubernetes-applications-with-self-signed-certificates-jfj#:~:text=Following%20are%20the%20steps%20to%20generate%20the%20self-signed,req%20command%20with%20the%20-subj%20and%20-addext%20options%3A)
 
 * Generate an RSA private key
-
+```
 openssl genrsa -out tls.key 4096
+```
 
 * Generate a CSR (Certificate Signing Request)
-
+```
  openssl req -new -key tls.key -out tls.csr \
     -subj "/CN=todo-app" -addext \
     "subjectAltName=DNS:todo-app.default.svc.cluster.local,DNS:localhost,DNS:todo-app"
+```
 
 * Generate the Self-Signed Certificate
-
+```
 openssl x509 -req -days 365 -in tls.csr -signkey tls.key \
     -out tls.crt -extensions req_ext \
     -extfile <(printf "[req_ext]\nsubjectAltName=DNS:todo-app.default.svc.cluster.local,DNS:localhost,DNS:todo-app")
 
 openssl x509 -in tls.crt -text -noout
+```
 
-
-
-
-
-
-[Self-signed Certificates best practices](https://myarch.com/self-signed-certificates-best-practices/?ref=passwork.pro/blog)
+## [Self-signed Certificates best practices](https://myarch.com/self-signed-certificates-best-practices/?ref=passwork.pro/blog)
 
 * Use elliptic curve keys as opposed to the default RSA ones, they provide a number of benefits over RSA
 
 * You can make your certificate more robust by specifying the certificate’s purpose using extended key usage and “key usage” extensions. “TLS Web Server Authentication” should be the only allowed usage for a server. This will prevent unintended use of the certificate.
 
 * Using an internal CA for issuing all internal certificates is a much better option
-
-
 
 ## Making an .cnf file
 [Here](https://man.openbsd.org/x509v3.cnf.5) is the documentation. In this document you can request things like client certificate authentication or to enable a certificate/public key to be used in several domain names/websites using the "subjectAltName" extension, however using the same public key/certificate in several domains could be considered a bad practice
@@ -1277,17 +1205,12 @@ DNS.2 = host2
 `curl -kv https://core.harbor.sopes`
 
 
-
-
-
-
-
 addonmanager.kubernetes.io/mode: EnsureExists
 
 
 ## Interesting Kubernetes commands
 
-kubectl get svc s-api-rest-grpc -n project -o yaml
+* `kubectl get svc s-api-rest-grpc -n project -o yaml`
 
-
+* `kubectl config set-context --current --namespace=<namespace_name>`
 
