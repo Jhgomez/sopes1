@@ -4,6 +4,8 @@ in Golang that sends it to a gRCP server written in Golang as well, this server 
 
 Harbor and Grafana will be installed using Helm to be able to set up https traffic and authentication more easily and then, they will have their own ingress that also uses Nginx ingress controller, in total the ingress controller along with three ingress objects will route traffic to three different services, all other services will be exposing Kubernetes deployments internally only.
 
+For more technologies by architecture components search for [cncf landscape](https://landscape.cncf.io/)
+
 # Instructions
 
 ## Create Courses Sample Json
