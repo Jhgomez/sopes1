@@ -159,6 +159,7 @@ They don't contain the full OS, they just contain the apps and libs and they dep
 It has almost all OS inside it but it has an agent that makes it load lightly and fast without unnecessary tools/programs/libs, so it will execute like a Full VM and not a container. Its size is similar to a container but behaves like a full VM. VM processes are not visible from the host, so it can be used when we want to encapsulate those process and want to secure them that way. AWS lambda runs on a microVM. 
 
 # Class 5
+[Docker architecture, Docker vs Virtualization(Hyperisors)](https://medium.com/@syedalioffcl/docker-deep-dive-8cbf0a06a452)
 
 ## GCP with Docker
 
@@ -235,7 +236,7 @@ they have different levels of opensource proyects, they are separated in four le
 To join CNCF go to their slack channel, join "cloud native community group", create events, assist to events and contribute
 
 ## Keppler
-Is a software that lets track energetic Kubernetes comsumption. Other tools that helps track and leverage resources efficiently is registry softwares like Harbor. Most used container registries  are administrated by the cloud providers or docker
+Is a software that lets track energetic Kubgernetes comsumption. Other tools that helps track and leverage resources efficiently is registry softwares like Harbor. Most used container registries  are administrated by the cloud providers or docker
 
 ## Container Registry
 Is basically a private repo or central hub where the building blocks of the containerized applications live. It enables to share and access containers images effortlessly. Docker hub is a public container registry. They are used to store proprietary or sensitive container images. Amazon Elastic Container Registry, Google Container Registry, Azure Container Registry are private registries

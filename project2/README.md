@@ -4,6 +4,8 @@ in Golang that sends it to a gRCP server written in Golang as well, this server 
 
 Harbor and Grafana will be installed using Helm to be able to set up https traffic and authentication more easily and then, they will have their own ingress that also uses Nginx ingress controller, in total the ingress controller along with three ingress objects will route traffic to three different services, all other services will be exposing Kubernetes deployments internally only.
 
+For more technologies by architecture components search for [cncf landscape](https://landscape.cncf.io/)
+
 # Instructions
 
 ## Create Courses Sample Json
@@ -218,6 +220,12 @@ JSON.SET PED $ `{"General":[], "Pediatria":[], "Cirugia":[], "Oftalmologia":[]}`
 
 
 #### Set up Kafka Producer and Consumer
+A very similar solution is called NATS, it may be more performant but Kafka is better handling high throughput. And in spring the solution for messaging is called "spring framework", another very popular solution is RabbitMQ
+
+NATS, Kafka are message brokers. Kafka is actually a stream broker, message queues/brokers are also referred to as message queues. The difference between these two is that a queue only delivers last message to any consumer/subscriber while streaming brokers adds each message to something similar to a log and gives any new subscriber the whole log this makes possible to subscribers to "move" or access any point or info in the streaming, they can also change the point from where they want to start reading the stream. However this has changed and now NATS can do streaming 
+
+RabbitMQ was born, like NATS, as message queue but is now also capable to do create streaming brokers. A message queue can be used, for example, in real life scenario to process orders in an e-commerce website while streaming brokers wouldn't fit this use case 
+
 ##### Producer
 The gRCP server will be implementing a Kafka client using [sarama](https://github.com/IBM/sarama?tab=readme-ov-file) library, a library in Go for Apache Kafka. So all the code we will add is based on the examples and the [official documentation](https://pkg.go.dev/github.com/IBM/sarama) and [this](https://pkg.go.dev/github.com/IBM/sarama#section-readme). Basically we create a async producer and a topic on each post request received, we have to lock the execution(thread safe to handle async transactions) of this code one thread at a time to avoid kafka errors, we also have to give Kafka a few seconds to refresh and in our case for some reason, maybe because is a server or the specific golang gRPC server APIs, we were not able to commit transactions, instead to flush the transactions messages to Kafka I would have to run the Close() method, as you can see in the [documentation](https://pkg.go.dev/github.com/IBM/sarama#AsyncProducer) this method flushes the messages. Other important thing is to update a transactions id on the configuration of each new Kafka producer. We also sent the gRPC "message" in a Json format
 
