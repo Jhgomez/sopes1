@@ -873,7 +873,7 @@ Note that according to [this official documentation](https://redis.io/docs/lates
 ### Setup Grafana
 
 #### Create a TLS certificate
-Using the private CA I created in [this section](#using-elliptic-curve-dey-algorithm) run the following commands
+Using the private CA I created in [this section](#using-elliptic-curve-key-algorithm) run the following commands
 
 * Generate a private key and CSR. note that "grafana.sopes" is the domain I want to authenticate, even thought a certificate can be used for several domains is better not to same public key across different domains so I'm creating a new one, an example of how to use it in more domains is in the "Making an .cnf file". Note `-noenc`, this option is used to avoid encrypting private key because Kubernetes doesn't support encrypted private keys: `openssl req -newkey ec:ecp.pem -noenc -keyout grafana-key.pem -out grafana-req.pem -subj "/C=GT/ST=Guatemala/L=Guatemala/O=okik.tech/OU=sopes1/CN=grafana.sopes/emailAddress=hg@icloud.com"`
 
